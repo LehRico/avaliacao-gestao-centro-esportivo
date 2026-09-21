@@ -1,0 +1,211 @@
+// Schema Prisma - Gestao de Centro Esportivo
+// Modelagem revisada e aprovada nas etapas de analise do projeto.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------------
+
+enum Role {
+  USER
+  ORGANIZER
+  ADMIN
+}
+
+enum TeamMemberRole {
+  CAPTAIN
+  MEMBER
+}
+
+enum TournamentStatus {
+  DRAFT
+  OPEN
+  IN_PROGRESS
+  FINISHED
+  CANCELED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  IN_PROGRESS
+  FINISHED
+  CANCELED
+}
+
+// ------------------------------------------------------------------
+// User
+// ------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedTeams           Team[]       @relation("TeamOwner")
+  teamMemberships      TeamMember[]
+  organizedTournaments Tournament[] @relation("TournamentOrganizer")
+
+  @@map("users")
+}
+
+// ------------------------------------------------------------------
+// Sport
+// ------------------------------------------------------------------
+
+model Sport {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teams       Team[]
+  tournaments Tournament[]
+
+  @@map("sports")
+}
+
+// ------------------------------------------------------------------
+// Court
+// ------------------------------------------------------------------
+
+model Court {
+  id        String   @id @default(uuid())
+  name      String
+  location  String?
+  imagePath String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  matches Match[]
+
+  @@map("courts")
+}
+
+// ------------------------------------------------------------------
+// Team
+// ------------------------------------------------------------------
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  sportId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User  @relation("TeamOwner", fields: [ownerId], references: [id])
+  sport Sport @relation(fields: [sportId], references: [id])
+
+  members           TeamMember[]
+  tournamentEntries TournamentTeam[]
+  matchesAsTeamA    Match[]          @relation("MatchTeamA")
+  matchesAsTeamB    Match[]          @relation("MatchTeamB")
+
+  @@unique([ownerId, name])
+  @@index([sportId])
+  @@map("teams")
+}
+
+// ------------------------------------------------------------------
+// TeamMember (associativa User <-> Team)
+// ------------------------------------------------------------------
+
+model TeamMember {
+  id       String         @id @default(uuid())
+  teamId   String
+  userId   String
+  role     TeamMemberRole @default(MEMBER)
+  joinedAt DateTime       @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@map("team_members")
+}
+
+// ------------------------------------------------------------------
+// Tournament
+// ------------------------------------------------------------------
+
+model Tournament {
+  id             String           @id @default(uuid())
+  name           String
+  sportId        String
+  organizerId    String
+  status         TournamentStatus @default(DRAFT)
+  startDate      DateTime
+  endDate        DateTime
+  regulationPath String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  sport     Sport @relation(fields: [sportId], references: [id])
+  organizer User  @relation("TournamentOrganizer", fields: [organizerId], references: [id])
+
+  teams   TournamentTeam[]
+  matches Match[]
+
+  @@index([sportId])
+  @@index([organizerId])
+  @@map("tournaments")
+}
+
+// ------------------------------------------------------------------
+// TournamentTeam (associativa Tournament <-> Team, inscricao)
+// ------------------------------------------------------------------
+
+model TournamentTeam {
+  id           String   @id @default(uuid())
+  tournamentId String
+  teamId       String
+  registeredAt DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, teamId])
+  @@index([teamId])
+  @@map("tournament_teams")
+}
+
+// ------------------------------------------------------------------
+// Match
+// ------------------------------------------------------------------
+
+model Match {
+  id           String      @id @default(uuid())
+  tournamentId String
+  courtId      String
+  teamAId      String
+  teamBId      String
+  status       MatchStatus @default(SCHEDULED)
+  scheduledAt  DateTime
+  durationMin  Int         @default(60)
+  scoreA       Int?
+  scoreB       Int?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  court      Court      @relation(fields: [courtId], references: [id])
+  teamA      Team       @relation("MatchTeamA", fields: [teamAId], references: [id])
+  teamB      Team       @relation("MatchTeamB", fields: [teamBId], references: [id])
+
+  @@index([courtId, scheduledAt])
+  @@index([tournamentId])
+  @@map("matches")
+}

@@ -1,0 +1,53 @@
+# compiled output
+/dist
+/node_modules
+
+# logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# environment
+.env
+.env.*
+!.env.example
+
+# uploaded files (keep folder structure, ignore user content)
+/uploads/*
+!/uploads/.gitkeep
+
+# Prisma
+/src/generated
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# coverage
+/coverage
+
+# AI tooling local caches (Claude Code, Windsurf, etc.)
+/.agents
+/.claude
+/.windsurf
+skills-lock.json
