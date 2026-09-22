@@ -465,3 +465,17 @@ Executado via `tsc` (não `ts-node` direto) por conta de uma particularidade do 
 ### Paginação e filtros
 
 Ver detalhes na seção [Endpoints](#endpoints). Aplicado às três listagens de maior volume esperado (Teams, Tournaments, Matches) — Sports, Courts e Users não receberam paginação por serem catálogos tipicamente pequenos, onde a complexidade adicional não traria benefício real.
+
+### Docker
+
+`Dockerfile` (multi-stage: build compila TS e gera o Prisma Client; produção só copia os artefatos e instala dependências de runtime) + `docker-compose.yml` (serviço `api` + `db` com PostgreSQL 16).
+
+```bash
+docker compose up --build
+```
+
+Isso sobe o PostgreSQL, aguarda ele ficar saudável (`healthcheck` com `pg_isready`), aplica as migrations automaticamente (`docker-entrypoint.sh` roda `prisma migrate deploy` antes de iniciar a API) e inicia a aplicação em `http://localhost:3000` (Swagger em `http://localhost:3000/api`).
+
+Por padrão usa um `JWT_SECRET` de desenvolvimento embutido no `docker-compose.yml` — para trocar, defina a variável de ambiente `JWT_SECRET` no host antes de subir (`JWT_SECRET=seu-secret docker compose up`). Dados do Postgres e uploads persistem em volumes nomeados (`centro_esportivo_pgdata`, `centro_esportivo_uploads`) entre reinícios.
+
+> **Nota de transparência**: estes arquivos foram escritos e revisados cuidadosamente (variáveis de ambiente, resolução de módulos do Prisma dentro do container, terminadores de linha do script de entrypoint forçados para LF via `.gitattributes`, ordem de inicialização via healthcheck), mas **não foram validados rodando `docker compose up` de fato**, pois o Docker não estava disponível no ambiente onde o projeto foi desenvolvido. Recomenda-se testar antes de depender disso para a apresentação.

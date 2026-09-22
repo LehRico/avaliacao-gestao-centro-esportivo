@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: centro_esportivo
+    ports:
+      - '5432:5432'
+    volumes:
+      - centro_esportivo_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/centro_esportivo?schema=public
+      JWT_SECRET: ${JWT_SECRET:-docker-compose-default-secret-change-me-in-real-use}
+      JWT_EXPIRES_IN: 1d
+      UPLOAD_MAX_FILE_SIZE_MB: 5
+      UPLOAD_DEST: ./uploads
+      EXTERNAL_API_TIMEOUT_MS: 5000
+      HOLIDAYS_API_URL: https://brasilapi.com.br/api/feriados/v1
+      WEATHER_API_URL: https://api.open-meteo.com/v1/forecast
+      WEATHER_LATITUDE: -23.5505
+      WEATHER_LONGITUDE: -46.6333
+    ports:
+      - '3000:3000'
+    volumes:
+      - centro_esportivo_uploads:/app/uploads
+
+volumes:
+  centro_esportivo_pgdata:
+  centro_esportivo_uploads:
