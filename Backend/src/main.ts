@@ -12,6 +12,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  app.enableCors({
+    origin: configService.get<string[]>('app.corsOrigins'),
+    credentials: true,
+  });
+
   app.use(
     helmet({
       contentSecurityPolicy: false,

@@ -5,6 +5,9 @@ export const envValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
   PORT: Joi.number().port().default(3000),
+  CORS_ORIGINS: Joi.string().default(
+    'http://localhost:5500,http://127.0.0.1:5500',
+  ),
 
   DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
 
