@@ -1,11 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { extname, join } from 'path';
 import { randomUUID } from 'crypto';
+
+const uploadDest = process.env.UPLOAD_DEST ?? './uploads';
 
 export const regulationMulterOptions = {
   storage: diskStorage({
-    destination: './uploads/regulations',
+    destination: join(uploadDest, 'regulations'),
     filename: (_req, file, callback) => {
       const uniqueName = `${randomUUID()}${extname(file.originalname)}`;
       callback(null, uniqueName);
