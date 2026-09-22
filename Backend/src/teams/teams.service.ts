@@ -9,6 +9,8 @@ import { Prisma } from '../generated/prisma/client';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { QueryTeamDto } from './dto/query-team.dto';
+import { buildPaginationMeta } from '../common/dto/pagination-query.dto';
 
 const teamWithMembers = {
   include: {
@@ -56,11 +58,25 @@ export class TeamsService {
     });
   }
 
-  findAll() {
-    return this.prisma.team.findMany({
-      orderBy: { name: 'asc' },
-      ...teamWithMembers,
-    });
+  async findAll(query: QueryTeamDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.TeamWhereInput = query.sportId
+      ? { sportId: query.sportId }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.team.findMany({
+        where,
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        ...teamWithMembers,
+      }),
+      this.prisma.team.count({ where }),
+    ]);
+
+    return { data, meta: buildPaginationMeta(page, limit, total) };
   }
 
   async findOne(id: string) {

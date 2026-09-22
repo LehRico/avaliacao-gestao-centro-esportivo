@@ -23,6 +23,7 @@ Projeto desenvolvido para a avaliação prática de Backend (documento `AV-11-CE
 - [Endpoints](#endpoints)
 - [Exemplos de requisição](#exemplos-de-requisição)
 - [Decisões arquiteturais](#decisões-arquiteturais)
+- [Bônus implementados](#bônus-implementados)
 
 ## Tecnologias
 
@@ -151,6 +152,14 @@ cp .env.example .env
 ```
 
 Edite `.env` com a `DATABASE_URL` do seu PostgreSQL local e um `JWT_SECRET` forte (mínimo 32 caracteres).
+
+Popule o banco com dados de exemplo (opcional, mas recomendado para demonstração):
+
+```bash
+npm run seed
+```
+
+O script é idempotente (pode rodar quantas vezes quiser sem duplicar dados) e imprime no final as credenciais de um usuário de cada papel (ADMIN, ORGANIZER, USER), todos com a senha `senha12345`.
 
 ## Variáveis de ambiente
 
@@ -283,6 +292,10 @@ Nenhuma resposta de erro inclui dados sensíveis (senha, hash, stack trace) — 
 ## Endpoints
 
 Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuário autenticado) · **ADMIN**/**ORGANIZER** (papel específico) · "e apenas o dono/organizador" indica checagem adicional de propriedade feita no Service.
+
+> **Documentação interativa**: com a aplicação rodando, acesse `http://localhost:3000/api` (Swagger UI) para ver e testar todos os endpoints diretamente pelo navegador, incluindo upload de arquivo e autenticação via botão "Authorize".
+
+> **Paginação e filtros**: `GET /teams`, `GET /tournaments` e `GET /matches` (e sua variante aninhada `GET /tournaments/:id/matches`) aceitam `?page=&limit=` (limit máximo 100, padrão 20) e retornam `{ data: [...], meta: { page, limit, total, totalPages } }` em vez de um array puro. Filtros adicionais: `teams?sportId=`, `tournaments?sportId=&status=`, `matches?tournamentId=&status=`.
 
 ### Auth
 
@@ -432,3 +445,23 @@ Decisões tomadas quando o documento da avaliação permitia mais de uma abordag
 - **IDs como UUID** (`String @id @default(uuid())`), não inteiros sequenciais — dificulta enumeração de recursos por tentativa incremental.
 - **Ambas as integrações externas** (clima e feriados) foram implementadas, não apenas uma — o documento permite escolher uma, mas as duas reaproveitam o mesmo padrão de `HttpService` + timeout + tratamento de falha, sem introduzir complexidade estrutural nova.
 - **Exclusão (hard delete)** de entidades com vínculos (Sport, Court, Team, Tournament) é bloqueada pela constraint `ON DELETE RESTRICT` do banco, convertida para `409 Conflict` tratado na camada de aplicação (em vez de deixar estourar como erro 500 do driver do banco).
+
+## Bônus implementados
+
+Implementados somente após 100% do obrigatório estar funcionando e testado.
+
+### Swagger
+
+Documentação interativa em `GET /api`, gerada a partir dos DTOs e controllers existentes via `@nestjs/swagger` + o plugin do Nest CLI (`nest-cli.json` → `compilerOptions.plugins`), que infere automaticamente os schemas a partir dos tipos TypeScript e decorators `class-validator` já usados nos DTOs — sem necessidade de duplicar anotações manualmente em cada campo. Rotas protegidas mostram o cadeado e podem ser testadas com o botão "Authorize" (cole o `accessToken` obtido em `/auth/login`). O endpoint de upload de regulamento também é testável diretamente pela UI.
+
+**Decisão de segurança**: o Content-Security-Policy padrão do Helmet foi desabilitado (`helmet({ contentSecurityPolicy: false })`) para não bloquear os scripts inline do Swagger UI. Aceitável para uma API REST que não serve HTML/JS ao usuário final — os demais cabeçalhos de segurança do Helmet continuam ativos.
+
+### Seed
+
+`npm run seed` popula o banco com dados de demonstração: um usuário de cada papel (ADMIN, ORGANIZER, 2×USER donos de times diferentes), 2 esportes, 3 quadras, 2 times, 1 torneio já com status `OPEN` e times inscritos, e 1 partida agendada. Todas as senhas são `senha12345`, impressas no console ao final da execução. O script é idempotente (usa `upsert`/checagem de existência), podendo ser rodado múltiplas vezes sem duplicar dados.
+
+Executado via `tsc` (não `ts-node` direto) por conta de uma particularidade do gerador `prisma-client` do Prisma 7: os arquivos gerados usam imports relativos com extensão `.js` explícita, que o `ts-node` em modo CommonJS não resolve em tempo real — compilar antes com `tsc -p tsconfig.seed.json` (mesma técnica usada no build principal) resolve isso de forma consistente.
+
+### Paginação e filtros
+
+Ver detalhes na seção [Endpoints](#endpoints). Aplicado às três listagens de maior volume esperado (Teams, Tournaments, Matches) — Sports, Courts e Users não receberam paginação por serem catálogos tipicamente pequenos, onde a complexidade adicional não traria benefício real.

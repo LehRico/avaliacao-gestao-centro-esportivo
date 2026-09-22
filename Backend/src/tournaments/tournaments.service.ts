@@ -10,6 +10,8 @@ import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';
 import { RegisterTeamDto } from './dto/register-team.dto';
+import { QueryTournamentDto } from './dto/query-tournament.dto';
+import { buildPaginationMeta } from '../common/dto/pagination-query.dto';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['OPEN', 'CANCELED'],
@@ -64,11 +66,26 @@ export class TournamentsService {
     });
   }
 
-  findAll() {
-    return this.prisma.tournament.findMany({
-      orderBy: { startDate: 'desc' },
-      ...tournamentWithRelations,
-    });
+  async findAll(query: QueryTournamentDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.TournamentWhereInput = {
+      ...(query.sportId ? { sportId: query.sportId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.tournament.findMany({
+        where,
+        orderBy: { startDate: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        ...tournamentWithRelations,
+      }),
+      this.prisma.tournament.count({ where }),
+    ]);
+
+    return { data, meta: buildPaginationMeta(page, limit, total) };
   }
 
   async findOne(id: string) {

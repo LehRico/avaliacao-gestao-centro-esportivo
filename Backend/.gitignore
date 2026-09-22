@@ -1,5 +1,6 @@
 # compiled output
 /dist
+/dist-seed
 /node_modules
 
 # logs
@@ -22,6 +23,9 @@ lerna-debug.log*
 
 # Prisma
 /src/generated
+/prisma/seed.js
+/prisma/seed.js.map
+/prisma/seed.d.ts
 
 # OS
 .DS_Store

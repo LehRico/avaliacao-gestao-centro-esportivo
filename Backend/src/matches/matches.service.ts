@@ -9,6 +9,8 @@ import { Prisma } from '../generated/prisma/client';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchDto } from './dto/update-match.dto';
 import { SetResultDto } from './dto/set-result.dto';
+import { QueryMatchDto } from './dto/query-match.dto';
+import { buildPaginationMeta } from '../common/dto/pagination-query.dto';
 
 const CREATION_ALLOWED_TOURNAMENT_STATUSES = ['OPEN', 'IN_PROGRESS'];
 
@@ -87,12 +89,26 @@ export class MatchesService {
     });
   }
 
-  findAll(tournamentId?: string) {
-    return this.prisma.match.findMany({
-      where: tournamentId ? { tournamentId } : undefined,
-      orderBy: { scheduledAt: 'asc' },
-      ...matchWithRelations,
-    });
+  async findAll(query: QueryMatchDto) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const where: Prisma.MatchWhereInput = {
+      ...(query.tournamentId ? { tournamentId: query.tournamentId } : {}),
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const [data, total] = await Promise.all([
+      this.prisma.match.findMany({
+        where,
+        orderBy: { scheduledAt: 'asc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        ...matchWithRelations,
+      }),
+      this.prisma.match.count({ where }),
+    ]);
+
+    return { data, meta: buildPaginationMeta(page, limit, total) };
   }
 
   async findOne(id: string) {

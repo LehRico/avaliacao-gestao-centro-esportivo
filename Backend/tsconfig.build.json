@@ -4,8 +4,10 @@
     "node_modules",
     "test",
     "dist",
+    "dist-seed",
     "generated",
     "**/*spec.ts",
-    "prisma.config.ts"
+    "prisma.config.ts",
+    "prisma"
   ]
 }

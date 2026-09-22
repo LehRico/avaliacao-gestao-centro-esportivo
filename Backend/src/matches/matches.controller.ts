@@ -8,16 +8,19 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchDto } from './dto/update-match.dto';
 import { UpdateMatchStatusDto } from './dto/update-match-status.dto';
 import { SetResultDto } from './dto/set-result.dto';
+import { QueryMatchDto } from './dto/query-match.dto';
 import { Auth } from '../common/decorators/auth.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { WeatherService } from '../external/weather.service';
 
+@ApiTags('Matches')
 @Controller()
 export class MatchesController {
   constructor(
@@ -27,6 +30,7 @@ export class MatchesController {
 
   @Post('tournaments/:tournamentId/matches')
   @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
   create(
     @Param('tournamentId') tournamentId: string,
     @Body() dto: CreateMatchDto,
@@ -36,13 +40,16 @@ export class MatchesController {
   }
 
   @Get('tournaments/:tournamentId/matches')
-  findAllByTournament(@Param('tournamentId') tournamentId: string) {
-    return this.matchesService.findAll(tournamentId);
+  findAllByTournament(
+    @Param('tournamentId') tournamentId: string,
+    @Query() query: QueryMatchDto,
+  ) {
+    return this.matchesService.findAll({ ...query, tournamentId });
   }
 
   @Get('matches')
-  findAll(@Query('tournamentId') tournamentId?: string) {
-    return this.matchesService.findAll(tournamentId);
+  findAll(@Query() query: QueryMatchDto) {
+    return this.matchesService.findAll(query);
   }
 
   @Get('matches/:id')
@@ -52,6 +59,7 @@ export class MatchesController {
 
   @Patch('matches/:id')
   @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateMatchDto,
@@ -62,6 +70,7 @@ export class MatchesController {
 
   @Patch('matches/:id/status')
   @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateMatchStatusDto,
@@ -72,6 +81,7 @@ export class MatchesController {
 
   @Patch('matches/:id/result')
   @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
   setResult(
     @Param('id') id: string,
     @Body() dto: SetResultDto,
@@ -82,6 +92,7 @@ export class MatchesController {
 
   @Delete('matches/:id')
   @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
   remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.matchesService.remove(id, user);
   }
