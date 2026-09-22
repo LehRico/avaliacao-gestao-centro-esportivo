@@ -14,6 +14,13 @@ export const envValidationSchema = Joi.object({
   UPLOAD_MAX_FILE_SIZE_MB: Joi.number().positive().default(5),
   UPLOAD_DEST: Joi.string().default('./uploads'),
 
-  EXTERNAL_API_URL: Joi.string().uri().required(),
   EXTERNAL_API_TIMEOUT_MS: Joi.number().positive().default(5000),
+  HOLIDAYS_API_URL: Joi.string()
+    .uri()
+    .default('https://brasilapi.com.br/api/feriados/v1'),
+  WEATHER_API_URL: Joi.string()
+    .uri()
+    .default('https://api.open-meteo.com/v1/forecast'),
+  WEATHER_LATITUDE: Joi.number().default(-23.5505),
+  WEATHER_LONGITUDE: Joi.number().default(-46.6333),
 });

@@ -15,7 +15,10 @@ export default () => ({
     dest: process.env.UPLOAD_DEST,
   },
   externalApi: {
-    url: process.env.EXTERNAL_API_URL,
     timeoutMs: parseInt(process.env.EXTERNAL_API_TIMEOUT_MS ?? '5000', 10),
+    holidaysUrl: process.env.HOLIDAYS_API_URL,
+    weatherUrl: process.env.WEATHER_API_URL,
+    weatherLatitude: parseFloat(process.env.WEATHER_LATITUDE ?? '-23.5505'),
+    weatherLongitude: parseFloat(process.env.WEATHER_LONGITUDE ?? '-46.6333'),
   },
 });

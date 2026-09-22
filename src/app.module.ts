@@ -11,6 +11,7 @@ import { SportsModule } from './sports/sports.module';
 import { CourtsModule } from './courts/courts.module';
 import { TeamsModule } from './teams/teams.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { MatchesModule } from './matches/matches.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TournamentsModule } from './tournaments/tournaments.module';
     CourtsModule,
     TeamsModule,
     TournamentsModule,
+    MatchesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

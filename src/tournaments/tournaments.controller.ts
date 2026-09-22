@@ -13,6 +13,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { regulationMulterOptions } from './multer.config';
 import { TournamentsService } from './tournaments.service';
+import { HolidaysService } from '../external/holidays.service';
 import { CreateTournamentDto } from './dto/create-tournament.dto';
 import { UpdateTournamentDto } from './dto/update-tournament.dto';
 import { UpdateTournamentStatusDto } from './dto/update-tournament-status.dto';
@@ -23,7 +24,10 @@ import type { CurrentUserPayload } from '../common/decorators/current-user.decor
 
 @Controller('tournaments')
 export class TournamentsController {
-  constructor(private readonly tournamentsService: TournamentsService) {}
+  constructor(
+    private readonly tournamentsService: TournamentsService,
+    private readonly holidaysService: HolidaysService,
+  ) {}
 
   @Post()
   @Auth('ORGANIZER', 'ADMIN')
@@ -105,4 +109,18 @@ export class TournamentsController {
     return this.tournamentsService.unregisterTeam(id, teamId, user);
   }
 
+  @Get(':id/holiday-check')
+  async checkHoliday(@Param('id') id: string) {
+    const tournament = await this.tournamentsService.findOne(id);
+    const holiday = await this.holidaysService.isHoliday(
+      tournament.startDate,
+    );
+
+    return {
+      tournamentId: tournament.id,
+      startDate: tournament.startDate,
+      isHoliday: holiday !== null,
+      holiday,
+    };
+  }
 }
