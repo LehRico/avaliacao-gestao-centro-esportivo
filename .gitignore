@@ -1,33 +1,11 @@
-# compiled output
-/dist
-/node_modules
-
-# logs
-logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# environment
-.env
-.env.*
-!.env.example
-
-# uploaded files (keep folder structure, ignore user content)
-/uploads/*
-!/uploads/.gitkeep
-
-# Prisma
-/src/generated
+# Cada projeto (Backend/, Frontend/) mantém seu próprio .gitignore
+# com as regras específicas de build, dependências e ambiente.
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDEs and editors
+# IDEs e editores
 /.idea
 .project
 .classpath
@@ -42,12 +20,3 @@ Thumbs.db
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-
-# coverage
-/coverage
-
-# AI tooling local caches (Claude Code, Windsurf, etc.)
-/.agents
-/.claude
-/.windsurf
-skills-lock.json
