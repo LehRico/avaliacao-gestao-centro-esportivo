@@ -1,0 +1,67 @@
+:root {
+  /* ---- Cores base ---- */
+  --bg: #0b0e14;
+  --surface: #141922;
+  --surface-alt: #1b212c;
+  --border: #252d3a;
+
+  /* ---- Cor de destaque (linha de quadra) ---- */
+  --accent: #d8ff3e;
+  --accent-ink: #10140a;
+
+  /* ---- Texto ---- */
+  --text: #f2f4f7;
+  --text-muted: #8991a3;
+  --text-faint: #5b6472;
+
+  /* ---- Cores semânticas ---- */
+  --success: #3ee082;
+  --success-bg: #12261c;
+  --warning: #ffb23e;
+  --warning-bg: #2a2013;
+  --danger: #ff5c5c;
+  --danger-bg: #2a1616;
+  --info: #4ea1ff;
+  --info-bg: #142334;
+
+  /* ---- Tipografia ---- */
+  --font-base: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-score: 'Space Grotesk', var(--font-base);
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
+  --fs-3xl: 2.75rem;
+
+  /* ---- Espaçamento (escala 4px) ---- */
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-8: 3rem;
+  --sp-10: 4rem;
+
+  /* ---- Bordas e raio ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --border-width: 1px;
+
+  /* ---- Sombra ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  /* ---- Layout ---- */
+  --sidebar-width: 240px;
+  --header-height: 64px;
+  --content-max-width: 1200px;
+
+  /* ---- Transições ---- */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+}

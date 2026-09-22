@@ -1,0 +1,53 @@
+.court-card {
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+}
+
+.court-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.court-card-name {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+}
+
+.court-card-location {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-top: var(--sp-1);
+}
+
+.court-card-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.court-schedule {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: var(--border-width) solid var(--border);
+  display: none;
+}
+
+.court-schedule.is-open {
+  display: block;
+}
+
+.court-schedule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-2) 0;
+  font-size: var(--fs-sm);
+}
+
+.court-schedule-item + .court-schedule-item {
+  border-top: var(--border-width) solid var(--border);
+}

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Novo torneio — MATCHPOINT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="css/reset.css" />
+<link rel="stylesheet" href="css/tokens.css" />
+<link rel="stylesheet" href="css/layout.css" />
+<link rel="stylesheet" href="css/components.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <div>
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn btn-ghost menu-toggle" id="menu-toggle" aria-label="Abrir menu">☰</button>
+          <a href="torneios.html" class="btn btn-ghost btn-sm">← Torneios</a>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Sair</button>
+      </header>
+
+      <main class="content" style="max-width: 560px;">
+        <div class="page-header">
+          <div class="page-header-text">
+            <h1>Novo torneio</h1>
+            <p>Preencha os dados para criar uma nova competição.</p>
+          </div>
+        </div>
+
+        <form id="tournament-form" class="card stack">
+          <div class="field">
+            <label for="name">Nome do torneio</label>
+            <input type="text" id="name" required />
+            <span class="field-error" id="name-error"></span>
+          </div>
+
+          <div class="field">
+            <label for="sport">Esporte</label>
+            <select id="sport" required></select>
+            <span class="field-error" id="sport-error"></span>
+          </div>
+
+          <div class="cluster">
+            <div class="field" style="flex: 1;">
+              <label for="start-date">Data de início</label>
+              <input type="datetime-local" id="start-date" required />
+            </div>
+            <div class="field" style="flex: 1;">
+              <label for="end-date">Data de término</label>
+              <input type="datetime-local" id="end-date" required />
+            </div>
+          </div>
+
+          <div class="alert alert-danger" id="form-error" role="alert" hidden></div>
+
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            Criar torneio
+          </button>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/torneio-novo.js"></script>
+</body>
+</html>
