@@ -57,11 +57,59 @@ async function main() {
     },
   });
 
+  const userC = await prisma.user.upsert({
+    where: { email: 'carla@centroesportivo.com' },
+    update: {},
+    create: {
+      name: 'Carla Mendes',
+      email: 'carla@centroesportivo.com',
+      passwordHash,
+      role: 'USER',
+    },
+  });
+
+  const userD = await prisma.user.upsert({
+    where: { email: 'diego@centroesportivo.com' },
+    update: {},
+    create: {
+      name: 'Diego Ferreira',
+      email: 'diego@centroesportivo.com',
+      passwordHash,
+      role: 'USER',
+    },
+  });
+
+  const userE = await prisma.user.upsert({
+    where: { email: 'elena@centroesportivo.com' },
+    update: {},
+    create: {
+      name: 'Elena Costa',
+      email: 'elena@centroesportivo.com',
+      passwordHash,
+      role: 'USER',
+    },
+  });
+
+  const userF = await prisma.user.upsert({
+    where: { email: 'fabio@centroesportivo.com' },
+    update: {},
+    create: {
+      name: 'Fábio Almeida',
+      email: 'fabio@centroesportivo.com',
+      passwordHash,
+      role: 'USER',
+    },
+  });
+
   console.log('Usuários criados:', {
     admin: admin.email,
     organizer: organizer.email,
     userA: userA.email,
     userB: userB.email,
+    userC: userC.email,
+    userD: userD.email,
+    userE: userE.email,
+    userF: userF.email,
   });
 
   const futsal = await prisma.sport.upsert({
@@ -76,7 +124,24 @@ async function main() {
     create: { name: 'Vôlei' },
   });
 
-  console.log('Esportes criados:', futsal.name, volei.name);
+  const otherSportNames = [
+    'Basquete',
+    'Handebol',
+    'Hockey no Gelo',
+    'Volei de Praia',
+    'Tênis',
+    'Skate',
+    'Natação',
+    'Atletismo',
+  ];
+  for (const name of otherSportNames) {
+    await prisma.sport.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
+  console.log(
+    'Esportes criados:',
+    [futsal.name, volei.name, ...otherSportNames].join(', '),
+  );
 
   const courtNames = ['Quadra Central', 'Quadra Coberta 1', 'Quadra Coberta 2'];
   const courts: Awaited<ReturnType<typeof prisma.court.create>>[] = [];
@@ -182,6 +247,10 @@ async function main() {
   console.log('  ORGANIZER:  organizador@centroesportivo.com');
   console.log('  USER (A):   ana@centroesportivo.com');
   console.log('  USER (B):   bruno@centroesportivo.com');
+  console.log('  USER (C):   carla@centroesportivo.com');
+  console.log('  USER (D):   diego@centroesportivo.com');
+  console.log('  USER (E):   elena@centroesportivo.com');
+  console.log('  USER (F):   fabio@centroesportivo.com');
 }
 
 main()
