@@ -16,6 +16,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiSecurity,
   ApiTags,
 } from '@nestjs/swagger';
 import { regulationMulterOptions } from './multer.config';
@@ -31,6 +32,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Tournaments')
+@ApiSecurity('api-key')
 @Controller('tournaments')
 export class TournamentsController {
   constructor(

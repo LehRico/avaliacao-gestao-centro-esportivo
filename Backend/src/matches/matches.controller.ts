@@ -8,7 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { MatchesService } from './matches.service';
 import { CreateMatchDto } from './dto/create-match.dto';
 import { UpdateMatchDto } from './dto/update-match.dto';
@@ -21,6 +21,7 @@ import type { CurrentUserPayload } from '../common/decorators/current-user.decor
 import { WeatherService } from '../external/weather.service';
 
 @ApiTags('Matches')
+@ApiSecurity('api-key')
 @Controller()
 export class MatchesController {
   constructor(

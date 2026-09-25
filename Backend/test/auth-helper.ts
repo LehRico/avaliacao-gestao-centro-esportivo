@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { req } from './request';
 
 export interface TestUser {
   id: string;
@@ -18,7 +18,7 @@ export async function createUser(
   counter += 1;
   const email = `user${counter}.${Date.now()}@example.com`;
 
-  const registerResponse = await request(app.getHttpServer())
+  const registerResponse = await req(app)
     .post('/auth/register')
     .send({ name: `Test User ${counter}`, email, password });
 
@@ -29,7 +29,7 @@ export async function createUser(
     await prisma.user.update({ where: { id: userId }, data: { role } });
   }
 
-  const loginResponse = await request(app.getHttpServer())
+  const loginResponse = await req(app)
     .post('/auth/login')
     .send({ email, password });
 

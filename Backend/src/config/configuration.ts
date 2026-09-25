@@ -17,6 +17,7 @@ export default () => ({
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN,
   },
+  apiKey: process.env.API_KEY,
   upload: {
     maxFileSizeMb: parseInt(process.env.UPLOAD_MAX_FILE_SIZE_MB ?? '5', 10),
     dest: process.env.UPLOAD_DEST,

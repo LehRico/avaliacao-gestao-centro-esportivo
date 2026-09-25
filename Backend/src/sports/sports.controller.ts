@@ -7,13 +7,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { SportsService } from './sports.service';
 import { CreateSportDto } from './dto/create-sport.dto';
 import { UpdateSportDto } from './dto/update-sport.dto';
 import { Auth } from '../common/decorators/auth.decorator';
 
 @ApiTags('Sports')
+@ApiSecurity('api-key')
 @Controller('sports')
 export class SportsController {
   constructor(private readonly sportsService: SportsService) {}

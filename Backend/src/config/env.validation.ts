@@ -14,6 +14,8 @@ export const envValidationSchema = Joi.object({
   JWT_SECRET: Joi.string().min(32).required(),
   JWT_EXPIRES_IN: Joi.string().default('1d'),
 
+  API_KEY: Joi.string().min(16).required(),
+
   UPLOAD_MAX_FILE_SIZE_MB: Joi.number().positive().default(5),
   UPLOAD_DEST: Joi.string().default('./uploads'),
 

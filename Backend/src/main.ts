@@ -38,10 +38,13 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Gestão de Centro Esportivo — API')
     .setDescription(
-      'API REST para gestão de um centro esportivo: usuários, quadras, esportes, torneios, times e partidas.',
+      'API REST para gestão de um centro esportivo: usuários, quadras, esportes, torneios, times e partidas.\n\n' +
+        'Toda requisição exige o header `X-API-KEY` (botão "Authorize" abaixo). Rotas privadas exigem também o Bearer token JWT.',
     )
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addApiKey({ type: 'apiKey', name: 'X-API-KEY', in: 'header' }, 'api-key')
+    .addSecurityRequirements('api-key')
     .build();
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api', app, swaggerDocument);

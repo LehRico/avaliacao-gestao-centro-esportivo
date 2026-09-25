@@ -8,7 +8,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
@@ -19,6 +19,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Teams')
+@ApiSecurity('api-key')
 @Controller('teams')
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
@@ -27,7 +28,7 @@ export class TeamsController {
   @Auth()
   @ApiBearerAuth('access-token')
   create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateTeamDto) {
-    return this.teamsService.create(user.userId, dto);
+    return this.teamsService.create(user.userId, user.role, dto);
   }
 
   @Get()

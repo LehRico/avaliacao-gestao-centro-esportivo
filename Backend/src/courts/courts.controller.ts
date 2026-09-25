@@ -7,13 +7,14 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { CourtsService } from './courts.service';
 import { CreateCourtDto } from './dto/create-court.dto';
 import { UpdateCourtDto } from './dto/update-court.dto';
 import { Auth } from '../common/decorators/auth.decorator';
 
 @ApiTags('Courts')
+@ApiSecurity('api-key')
 @Controller('courts')
 export class CourtsController {
   constructor(private readonly courtsService: CourtsService) {}
