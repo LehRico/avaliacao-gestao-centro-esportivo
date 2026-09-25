@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '../generated/prisma/client';
 import { CreateCourtDto } from './dto/create-court.dto';
 import { UpdateCourtDto } from './dto/update-court.dto';
 
@@ -12,7 +11,15 @@ import { UpdateCourtDto } from './dto/update-court.dto';
 export class CourtsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(dto: CreateCourtDto) {
+  async create(dto: CreateCourtDto) {
+    const existing = await this.prisma.court.findUnique({
+      where: { name: dto.name },
+    });
+
+    if (existing) {
+      throw new ConflictException('Já existe uma quadra com esse nome.');
+    }
+
     return this.prisma.court.create({ data: dto });
   }
 
@@ -33,25 +40,39 @@ export class CourtsService {
   async update(id: string, dto: UpdateCourtDto) {
     await this.findOne(id);
 
+    if (dto.name) {
+      const existing = await this.prisma.court.findUnique({
+        where: { name: dto.name },
+      });
+
+      if (existing && existing.id !== id) {
+        throw new ConflictException('Já existe uma quadra com esse nome.');
+      }
+    }
+
     return this.prisma.court.update({ where: { id }, data: dto });
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const court = await this.findOne(id);
 
-    try {
-      return await this.prisma.court.delete({ where: { id } });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2003'
-      ) {
-        throw new ConflictException(
-          'Não é possível excluir esta quadra pois há partidas vinculadas a ela.',
-        );
-      }
+    const activeMatch = await this.prisma.match.findFirst({
+      where: { courtId: id, status: { in: ['SCHEDULED', 'IN_PROGRESS'] } },
+    });
 
-      throw error;
+    if (activeMatch) {
+      throw new ConflictException(
+        'Não é possível excluir esta quadra pois há partidas agendadas ou em andamento vinculadas a ela.',
+      );
     }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.match.updateMany({
+        where: { courtId: id },
+        data: { courtName: court.name, courtId: null },
+      });
+
+      return tx.court.delete({ where: { id } });
+    });
   }
 }

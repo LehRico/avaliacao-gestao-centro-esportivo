@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { req } from './request';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
@@ -19,15 +19,16 @@ describe('Mandatory Business Rules (e2e)', () => {
   async function setupInProgressTournamentWithTeams() {
     const admin = await createUser(app, 'ADMIN');
     const organizer = await createUser(app, 'ORGANIZER');
-    const teamOwner = await createUser(app, 'USER');
+    const teamOwnerA = await createUser(app, 'USER');
+    const teamOwnerB = await createUser(app, 'USER');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Esporte Regras ${Date.now()}` });
     const sportId = sportResponse.body.id;
 
-    const tournamentResponse = await request(app.getHttpServer())
+    const tournamentResponse = await req(app)
       .post('/tournaments')
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({
@@ -38,35 +39,35 @@ describe('Mandatory Business Rules (e2e)', () => {
       });
     const tournamentId = tournamentResponse.body.id;
 
-    await request(app.getHttpServer())
+    await req(app)
       .patch(`/tournaments/${tournamentId}/status`)
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({ status: 'OPEN' });
 
-    const teamAResponse = await request(app.getHttpServer())
+    const teamAResponse = await req(app)
       .post('/teams')
-      .set('Authorization', `Bearer ${teamOwner.token}`)
+      .set('Authorization', `Bearer ${teamOwnerA.token}`)
       .send({ name: 'Time Regras A', sportId });
-    const teamBResponse = await request(app.getHttpServer())
+    const teamBResponse = await req(app)
       .post('/teams')
-      .set('Authorization', `Bearer ${teamOwner.token}`)
+      .set('Authorization', `Bearer ${teamOwnerB.token}`)
       .send({ name: 'Time Regras B', sportId });
 
-    await request(app.getHttpServer())
+    await req(app)
       .post(`/tournaments/${tournamentId}/teams`)
-      .set('Authorization', `Bearer ${teamOwner.token}`)
+      .set('Authorization', `Bearer ${teamOwnerA.token}`)
       .send({ teamId: teamAResponse.body.id });
-    await request(app.getHttpServer())
+    await req(app)
       .post(`/tournaments/${tournamentId}/teams`)
-      .set('Authorization', `Bearer ${teamOwner.token}`)
+      .set('Authorization', `Bearer ${teamOwnerB.token}`)
       .send({ teamId: teamBResponse.body.id });
 
-    await request(app.getHttpServer())
+    await req(app)
       .patch(`/tournaments/${tournamentId}/status`)
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({ status: 'IN_PROGRESS' });
 
-    const courtResponse = await request(app.getHttpServer())
+    const courtResponse = await req(app)
       .post('/courts')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Quadra Regras ${Date.now()}` });
@@ -84,7 +85,7 @@ describe('Mandatory Business Rules (e2e)', () => {
     const { organizerToken, tournamentId, teamAId, courtId } =
       await setupInProgressTournamentWithTeams();
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({
@@ -101,7 +102,7 @@ describe('Mandatory Business Rules (e2e)', () => {
     const { organizerToken, tournamentId, teamAId, teamBId, courtId } =
       await setupInProgressTournamentWithTeams();
 
-    const firstMatch = await request(app.getHttpServer())
+    const firstMatch = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({
@@ -113,7 +114,7 @@ describe('Mandatory Business Rules (e2e)', () => {
       });
     expect(firstMatch.status).toBe(201);
 
-    const overlappingMatch = await request(app.getHttpServer())
+    const overlappingMatch = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({
@@ -131,7 +132,7 @@ describe('Mandatory Business Rules (e2e)', () => {
     const { organizerToken, tournamentId, teamAId, teamBId, courtId } =
       await setupInProgressTournamentWithTeams();
 
-    const firstMatch = await request(app.getHttpServer())
+    const firstMatch = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({
@@ -143,7 +144,7 @@ describe('Mandatory Business Rules (e2e)', () => {
       });
     expect(firstMatch.status).toBe(201);
 
-    const backToBackMatch = await request(app.getHttpServer())
+    const backToBackMatch = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({
@@ -162,15 +163,15 @@ describe('Mandatory Business Rules (e2e)', () => {
       await setupInProgressTournamentWithTeams();
 
     const teamOwner = await createUser(app, 'USER');
-    const sportsResponse = await request(app.getHttpServer()).get('/sports');
+    const sportsResponse = await req(app).get('/sports');
     const anySport = sportsResponse.body[0];
 
-    const outsiderTeam = await request(app.getHttpServer())
+    const outsiderTeam = await req(app)
       .post('/teams')
       .set('Authorization', `Bearer ${teamOwner.token}`)
       .send({ name: `Time de Fora ${Date.now()}`, sportId: anySport.id });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/matches`)
       .set('Authorization', `Bearer ${organizerToken}`)
       .send({

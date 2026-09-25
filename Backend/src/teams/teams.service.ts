@@ -28,7 +28,7 @@ const teamWithMembers = {
 export class TeamsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(ownerId: string, dto: CreateTeamDto) {
+  async create(ownerId: string, ownerRole: string, dto: CreateTeamDto) {
     const sport = await this.prisma.sport.findUnique({
       where: { id: dto.sportId },
     });
@@ -45,14 +45,20 @@ export class TeamsService {
       throw new ConflictException('Você já possui um time com esse nome.');
     }
 
+    const ownerPlaysAsCaptain = ownerRole === 'USER';
+
+    if (ownerPlaysAsCaptain) {
+      await this.assertNotInAnotherTeamOfSport(ownerId, dto.sportId);
+    }
+
     return this.prisma.team.create({
       data: {
         name: dto.name,
         ownerId,
         sportId: dto.sportId,
-        members: {
-          create: { userId: ownerId, role: 'CAPTAIN' },
-        },
+        ...(ownerPlaysAsCaptain
+          ? { members: { create: { userId: ownerId, role: 'CAPTAIN' } } }
+          : {}),
       },
       ...teamWithMembers,
     });
@@ -111,6 +117,16 @@ export class TeamsService {
     const team = await this.findOne(id);
     this.assertOwnerOrAdmin(team.ownerId, currentUser);
 
+    const otherMember = await this.prisma.teamMember.findFirst({
+      where: { teamId: id, userId: { not: team.ownerId } },
+    });
+
+    if (otherMember) {
+      throw new ConflictException(
+        'Não é possível excluir este time pois há membros além do dono. Remova os membros antes de excluir.',
+      );
+    }
+
     try {
       return await this.prisma.team.delete({ where: { id } });
     } catch (error) {
@@ -152,6 +168,8 @@ export class TeamsService {
     if (existingMember) {
       throw new ConflictException('Este usuário já é membro do time.');
     }
+
+    await this.assertNotInAnotherTeamOfSport(user.id, team.sportId);
 
     await this.prisma.teamMember.create({
       data: { teamId, userId: user.id, role: 'MEMBER' },
@@ -200,6 +218,18 @@ export class TeamsService {
     if (currentUser.userId !== ownerId) {
       throw new ForbiddenException(
         'Apenas o dono do time pode realizar esta operação.',
+      );
+    }
+  }
+
+  private async assertNotInAnotherTeamOfSport(userId: string, sportId: string) {
+    const membershipInSport = await this.prisma.teamMember.findFirst({
+      where: { userId, team: { sportId } },
+    });
+
+    if (membershipInSport) {
+      throw new ConflictException(
+        'Este usuário já é membro de outro time nesse esporte.',
       );
     }
   }

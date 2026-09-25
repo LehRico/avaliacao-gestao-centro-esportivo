@@ -30,6 +30,18 @@ const matchWithRelations = {
   },
 } satisfies Prisma.MatchDefaultArgs;
 
+/**
+ * Se a quadra da partida foi excluída (courtId nulo), expõe o nome
+ * preservado em courtName no lugar da relação, mantendo o mesmo
+ * formato { id, name } que o frontend já consome.
+ */
+function withCourtFallback<T extends { court: { id: string; name: string } | null; courtName: string | null }>(
+  match: T,
+) {
+  if (match.court) return match;
+  return { ...match, court: { id: null, name: match.courtName } };
+}
+
 @Injectable()
 export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -76,7 +88,7 @@ export class MatchesService {
 
     await this.assertNoCourtOverlap(dto.courtId, scheduledAt, durationMin);
 
-    return this.prisma.match.create({
+    const created = await this.prisma.match.create({
       data: {
         tournamentId,
         courtId: dto.courtId,
@@ -87,6 +99,8 @@ export class MatchesService {
       },
       ...matchWithRelations,
     });
+
+    return withCourtFallback(created);
   }
 
   async findAll(query: QueryMatchDto) {
@@ -108,7 +122,10 @@ export class MatchesService {
       this.prisma.match.count({ where }),
     ]);
 
-    return { data, meta: buildPaginationMeta(page, limit, total) };
+    return {
+      data: data.map(withCourtFallback),
+      meta: buildPaginationMeta(page, limit, total),
+    };
   }
 
   async findOne(id: string) {
@@ -121,7 +138,7 @@ export class MatchesService {
       throw new NotFoundException('Partida não encontrada.');
     }
 
-    return match;
+    return withCourtFallback(match);
   }
 
   async update(
@@ -138,7 +155,13 @@ export class MatchesService {
       );
     }
 
-    const courtId = dto.courtId ?? match.courtId;
+    if (!dto.courtId && !match.courtId) {
+      throw new ConflictException(
+        'Esta partida não possui mais uma quadra vinculada; informe courtId para reagendá-la.',
+      );
+    }
+
+    const courtId = dto.courtId ?? (match.courtId as string);
     const scheduledAt = dto.scheduledAt
       ? new Date(dto.scheduledAt)
       : match.scheduledAt;
@@ -162,11 +185,13 @@ export class MatchesService {
       );
     }
 
-    return this.prisma.match.update({
+    const updated = await this.prisma.match.update({
       where: { id },
       data: { courtId, scheduledAt },
       ...matchWithRelations,
     });
+
+    return withCourtFallback(updated);
   }
 
   async updateStatus(
@@ -185,11 +210,13 @@ export class MatchesService {
       );
     }
 
-    return this.prisma.match.update({
+    const updated = await this.prisma.match.update({
       where: { id },
       data: { status: status as Prisma.MatchUpdateInput['status'] },
       ...matchWithRelations,
     });
+
+    return withCourtFallback(updated);
   }
 
   async setResult(
@@ -206,7 +233,7 @@ export class MatchesService {
       );
     }
 
-    return this.prisma.match.update({
+    const updated = await this.prisma.match.update({
       where: { id },
       data: {
         scoreA: dto.scoreA,
@@ -215,6 +242,8 @@ export class MatchesService {
       },
       ...matchWithRelations,
     });
+
+    return withCourtFallback(updated);
   }
 
   async remove(id: string, currentUser: { userId: string; role: string }) {

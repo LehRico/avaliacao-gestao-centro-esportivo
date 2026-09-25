@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { req } from './request';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
@@ -18,22 +18,22 @@ describe('Pagination and filters (e2e)', () => {
 
   it('deve paginar a listagem de times com meta correto', async () => {
     const admin = await createUser(app, 'ADMIN');
-    const user = await createUser(app, 'USER');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Esporte Paginacao ${Date.now()}` });
     const sportId = sportResponse.body.id;
 
     for (let i = 1; i <= 3; i++) {
-      await request(app.getHttpServer())
+      const owner = await createUser(app, 'USER');
+      await req(app)
         .post('/teams')
-        .set('Authorization', `Bearer ${user.token}`)
+        .set('Authorization', `Bearer ${owner.token}`)
         .send({ name: `Time Paginado ${i} ${Date.now()}`, sportId });
     }
 
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       `/teams?sportId=${sportId}&limit=2&page=1`,
     );
 
@@ -46,7 +46,7 @@ describe('Pagination and filters (e2e)', () => {
       totalPages: 2,
     });
 
-    const secondPage = await request(app.getHttpServer()).get(
+    const secondPage = await req(app).get(
       `/teams?sportId=${sportId}&limit=2&page=2`,
     );
     expect(secondPage.body.data).toHaveLength(1);
@@ -54,7 +54,7 @@ describe('Pagination and filters (e2e)', () => {
   });
 
   it('deve rejeitar limit acima do máximo permitido (400)', async () => {
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       '/teams?limit=500',
     );
 
@@ -65,12 +65,12 @@ describe('Pagination and filters (e2e)', () => {
     const admin = await createUser(app, 'ADMIN');
     const organizer = await createUser(app, 'ORGANIZER');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Esporte Filtro Status ${Date.now()}` });
 
-    const draftTournament = await request(app.getHttpServer())
+    const draftTournament = await req(app)
       .post('/tournaments')
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({
@@ -80,7 +80,7 @@ describe('Pagination and filters (e2e)', () => {
         endDate: '2028-01-10T18:00:00.000Z',
       });
 
-    const openTournament = await request(app.getHttpServer())
+    const openTournament = await req(app)
       .post('/tournaments')
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({
@@ -89,12 +89,12 @@ describe('Pagination and filters (e2e)', () => {
         startDate: '2028-02-01T10:00:00.000Z',
         endDate: '2028-02-10T18:00:00.000Z',
       });
-    await request(app.getHttpServer())
+    await req(app)
       .patch(`/tournaments/${openTournament.body.id}/status`)
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({ status: 'OPEN' });
 
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       `/tournaments?sportId=${sportResponse.body.id}&status=OPEN`,
     );
 

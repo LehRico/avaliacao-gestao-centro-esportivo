@@ -82,7 +82,7 @@ model Sport {
 
 model Court {
   id        String   @id @default(uuid())
-  name      String
+  name      String   @unique
   location  String?
   imagePath String?
   createdAt DateTime @default(now())
@@ -189,7 +189,8 @@ model TournamentTeam {
 model Match {
   id           String      @id @default(uuid())
   tournamentId String
-  courtId      String
+  courtId      String?
+  courtName    String?
   teamAId      String
   teamBId      String
   status       MatchStatus @default(SCHEDULED)
@@ -201,7 +202,7 @@ model Match {
   updatedAt    DateTime    @updatedAt
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
-  court      Court      @relation(fields: [courtId], references: [id])
+  court      Court?     @relation(fields: [courtId], references: [id], onDelete: SetNull)
   teamA      Team       @relation("MatchTeamA", fields: [teamAId], references: [id])
   teamB      Team       @relation("MatchTeamB", fields: [teamBId], references: [id])
 

@@ -2,26 +2,26 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ValidationPipe } from '@nestjs/common';
-import request from 'supertest';
-import { of, throwError } from 'rxjs';
+import { throwError } from 'rxjs';
 import { AppModule } from '../src/app.module';
 import { LoggingInterceptor } from '../src/common/interceptors/logging.interceptor';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
+import { req } from './request';
 
 async function createTournamentForHolidayCheck(
   app: INestApplication,
   adminToken: string,
   organizerToken: string,
 ) {
-  const sportResponse = await request(app.getHttpServer())
+  const sportResponse = await req(app)
     .post('/sports')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ name: `Esporte Externo ${Date.now()}` });
 
-  const tournamentResponse = await request(app.getHttpServer())
+  const tournamentResponse = await req(app)
     .post('/tournaments')
     .set('Authorization', `Bearer ${organizerToken}`)
     .send({
@@ -67,7 +67,7 @@ describe('External Integration (e2e)', () => {
         organizer.token,
       );
 
-      const response = await request(app.getHttpServer()).get(
+      const response = await req(app).get(
         `/tournaments/${tournamentId}/holiday-check`,
       );
 
@@ -114,7 +114,7 @@ describe('External Integration (e2e)', () => {
         organizer.token,
       );
 
-      const response = await request(app.getHttpServer()).get(
+      const response = await req(app).get(
         `/tournaments/${tournamentId}/holiday-check`,
       );
 
@@ -127,12 +127,12 @@ describe('External Integration (e2e)', () => {
       const admin = await createUser(app, 'ADMIN');
       const organizer = await createUser(app, 'ORGANIZER');
 
-      const sportResponse = await request(app.getHttpServer())
+      const sportResponse = await req(app)
         .post('/sports')
         .set('Authorization', `Bearer ${admin.token}`)
         .send({ name: `Esporte Clima ${Date.now()}` });
 
-      const tournamentResponse = await request(app.getHttpServer())
+      const tournamentResponse = await req(app)
         .post('/tournaments')
         .set('Authorization', `Bearer ${organizer.token}`)
         .send({
@@ -142,24 +142,25 @@ describe('External Integration (e2e)', () => {
           endDate: '2027-03-10T18:00:00.000Z',
         });
 
-      await request(app.getHttpServer())
+      await req(app)
         .patch(`/tournaments/${tournamentResponse.body.id}/status`)
         .set('Authorization', `Bearer ${organizer.token}`)
         .send({ status: 'OPEN' });
 
-      await request(app.getHttpServer())
+      await req(app)
         .patch(`/tournaments/${tournamentResponse.body.id}/status`)
         .set('Authorization', `Bearer ${organizer.token}`)
         .send({ status: 'IN_PROGRESS' });
 
-      const teamOwner = await createUser(app, 'USER');
-      const teamAResponse = await request(app.getHttpServer())
+      const teamOwnerA = await createUser(app, 'USER');
+      const teamOwnerB = await createUser(app, 'USER');
+      const teamAResponse = await req(app)
         .post('/teams')
-        .set('Authorization', `Bearer ${teamOwner.token}`)
+        .set('Authorization', `Bearer ${teamOwnerA.token}`)
         .send({ name: 'Time Clima A', sportId: sportResponse.body.id });
-      const teamBResponse = await request(app.getHttpServer())
+      const teamBResponse = await req(app)
         .post('/teams')
-        .set('Authorization', `Bearer ${teamOwner.token}`)
+        .set('Authorization', `Bearer ${teamOwnerB.token}`)
         .send({ name: 'Time Clima B', sportId: sportResponse.body.id });
 
       const prisma = getPrisma(app);
@@ -170,12 +171,12 @@ describe('External Integration (e2e)', () => {
         ],
       });
 
-      const courtResponse = await request(app.getHttpServer())
+      const courtResponse = await req(app)
         .post('/courts')
         .set('Authorization', `Bearer ${admin.token}`)
         .send({ name: 'Quadra Clima' });
 
-      const matchResponse = await request(app.getHttpServer())
+      const matchResponse = await req(app)
         .post(`/tournaments/${tournamentResponse.body.id}/matches`)
         .set('Authorization', `Bearer ${organizer.token}`)
         .send({
@@ -185,7 +186,7 @@ describe('External Integration (e2e)', () => {
           scheduledAt: '2027-03-05T14:00:00.000Z',
         });
 
-      const response = await request(app.getHttpServer()).get(
+      const response = await req(app).get(
         `/matches/${matchResponse.body.id}/weather`,
       );
 
