@@ -1,16 +1,16 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { req } from './request';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
 
 async function createTournament(app: INestApplication, organizerToken: string, adminToken: string) {
-  const sportResponse = await request(app.getHttpServer())
+  const sportResponse = await req(app)
     .post('/sports')
     .set('Authorization', `Bearer ${adminToken}`)
     .send({ name: `Esporte Upload ${Date.now()}` });
 
-  const tournamentResponse = await request(app.getHttpServer())
+  const tournamentResponse = await req(app)
     .post('/tournaments')
     .set('Authorization', `Bearer ${organizerToken}`)
     .send({
@@ -43,7 +43,7 @@ describe('Upload (e2e)', () => {
 
     const pdfBuffer = Buffer.from('%PDF-1.4\n%%EOF');
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/regulation`)
       .set('Authorization', `Bearer ${organizer.token}`)
       .attach('file', pdfBuffer, {
@@ -61,7 +61,7 @@ describe('Upload (e2e)', () => {
     const organizer = await createUser(app, 'ORGANIZER');
     const tournamentId = await createTournament(app, organizer.token, admin.token);
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/regulation`)
       .set('Authorization', `Bearer ${organizer.token}`);
 
@@ -74,7 +74,7 @@ describe('Upload (e2e)', () => {
     const organizer = await createUser(app, 'ORGANIZER');
     const tournamentId = await createTournament(app, organizer.token, admin.token);
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/regulation`)
       .set('Authorization', `Bearer ${organizer.token}`)
       .attach('file', Buffer.from('conteudo texto'), {
@@ -91,7 +91,7 @@ describe('Upload (e2e)', () => {
     const otherOrganizer = await createUser(app, 'ORGANIZER');
     const tournamentId = await createTournament(app, organizer.token, admin.token);
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/regulation`)
       .set('Authorization', `Bearer ${otherOrganizer.token}`)
       .attach('file', Buffer.from('%PDF-1.4\n%%EOF'), {

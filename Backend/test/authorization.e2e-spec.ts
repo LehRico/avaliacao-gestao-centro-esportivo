@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { req } from './request';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
@@ -20,7 +20,7 @@ describe('Authorization (e2e)', () => {
   it('deve rejeitar usuário comum tentando listar todos os usuários (403)', async () => {
     const user = await createUser(app, 'USER');
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .get('/users')
       .set('Authorization', `Bearer ${user.token}`);
 
@@ -30,7 +30,7 @@ describe('Authorization (e2e)', () => {
   it('deve permitir que ADMIN liste todos os usuários (200)', async () => {
     const admin = await createUser(app, 'ADMIN');
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .get('/users')
       .set('Authorization', `Bearer ${admin.token}`);
 
@@ -44,26 +44,26 @@ describe('Authorization (e2e)', () => {
     const intruder = await createUser(app, 'USER');
     const admin = await createUser(app, 'ADMIN');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Esporte ${Date.now()}` });
 
-    const teamResponse = await request(app.getHttpServer())
+    const teamResponse = await req(app)
       .post('/teams')
       .set('Authorization', `Bearer ${owner.token}`)
       .send({ name: 'Time do Dono', sportId: sportResponse.body.id });
 
     const teamId = teamResponse.body.id;
 
-    const attackResponse = await request(app.getHttpServer())
+    const attackResponse = await req(app)
       .patch(`/teams/${teamId}`)
       .set('Authorization', `Bearer ${intruder.token}`)
       .send({ name: 'Nome Alterado Por Terceiro' });
 
     expect(attackResponse.status).toBe(403);
 
-    const confirmResponse = await request(app.getHttpServer()).get(
+    const confirmResponse = await req(app).get(
       `/teams/${teamId}`,
     );
     expect(confirmResponse.body.name).toBe('Time do Dono');
@@ -73,7 +73,7 @@ describe('Authorization (e2e)', () => {
     const userA = await createUser(app, 'USER');
     const userB = await createUser(app, 'USER');
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .get('/users/me')
       .set('Authorization', `Bearer ${userA.token}`);
 

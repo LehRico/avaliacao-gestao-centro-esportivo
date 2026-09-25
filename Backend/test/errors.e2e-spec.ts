@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import { req } from './request';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
 import { createUser } from './auth-helper';
@@ -20,21 +20,21 @@ describe('Errors - 404 and 409 (e2e)', () => {
 
   // Cenário obrigatório 5: recurso inexistente -> 404
   it('deve retornar 404 ao buscar Sport inexistente', async () => {
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       `/sports/${NON_EXISTENT_UUID}`,
     );
     expect(response.status).toBe(404);
   });
 
   it('deve retornar 404 ao buscar Team inexistente', async () => {
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       `/teams/${NON_EXISTENT_UUID}`,
     );
     expect(response.status).toBe(404);
   });
 
   it('deve retornar 404 ao buscar Tournament inexistente', async () => {
-    const response = await request(app.getHttpServer()).get(
+    const response = await req(app).get(
       `/tournaments/${NON_EXISTENT_UUID}`,
     );
     expect(response.status).toBe(404);
@@ -43,7 +43,7 @@ describe('Errors - 404 and 409 (e2e)', () => {
   it('deve retornar 404 ao criar Team referenciando Sport inexistente', async () => {
     const user = await createUser(app, 'USER');
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/teams')
       .set('Authorization', `Bearer ${user.token}`)
       .send({ name: 'Time Fantasma', sportId: NON_EXISTENT_UUID });
@@ -56,12 +56,12 @@ describe('Errors - 404 and 409 (e2e)', () => {
     const admin = await createUser(app, 'ADMIN');
     const name = `Vôlei ${Date.now()}`;
 
-    await request(app.getHttpServer())
+    await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name });
@@ -73,17 +73,17 @@ describe('Errors - 404 and 409 (e2e)', () => {
     const admin = await createUser(app, 'ADMIN');
     const user = await createUser(app, 'USER');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Esporte Vinculado ${Date.now()}` });
 
-    await request(app.getHttpServer())
+    await req(app)
       .post('/teams')
       .set('Authorization', `Bearer ${user.token}`)
       .send({ name: 'Time Vinculado', sportId: sportResponse.body.id });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .delete(`/sports/${sportResponse.body.id}`)
       .set('Authorization', `Bearer ${admin.token}`);
 
@@ -95,13 +95,13 @@ describe('Errors - 404 and 409 (e2e)', () => {
     const organizer = await createUser(app, 'ORGANIZER');
     const teamOwner = await createUser(app, 'USER');
 
-    const sportResponse = await request(app.getHttpServer())
+    const sportResponse = await req(app)
       .post('/sports')
       .set('Authorization', `Bearer ${admin.token}`)
       .send({ name: `Handebol ${Date.now()}` });
     const sportId = sportResponse.body.id;
 
-    const tournamentResponse = await request(app.getHttpServer())
+    const tournamentResponse = await req(app)
       .post('/tournaments')
       .set('Authorization', `Bearer ${organizer.token}`)
       .send({
@@ -112,18 +112,18 @@ describe('Errors - 404 and 409 (e2e)', () => {
       });
     const tournamentId = tournamentResponse.body.id;
 
-    const teamResponse = await request(app.getHttpServer())
+    const teamResponse = await req(app)
       .post('/teams')
       .set('Authorization', `Bearer ${teamOwner.token}`)
       .send({ name: 'Time Handebol', sportId });
     const teamId = teamResponse.body.id;
 
-    await request(app.getHttpServer())
+    await req(app)
       .post(`/tournaments/${tournamentId}/teams`)
       .set('Authorization', `Bearer ${teamOwner.token}`)
       .send({ teamId });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post(`/tournaments/${tournamentId}/teams`)
       .set('Authorization', `Bearer ${teamOwner.token}`)
       .send({ teamId });

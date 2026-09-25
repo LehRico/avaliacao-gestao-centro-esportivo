@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { createTestApp, getPrisma } from './test-app';
 import { cleanDatabase } from './cleanup';
+import { req } from './request';
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
@@ -17,7 +17,7 @@ describe('Auth (e2e)', () => {
 
   // Cenário obrigatório 1: fluxo principal com sucesso
   it('deve registrar um usuário com sucesso e nunca retornar a senha (201)', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/register')
       .send({
         name: 'Maria Silva',
@@ -35,11 +35,11 @@ describe('Auth (e2e)', () => {
 
   it('deve fazer login com sucesso e retornar token (200)', async () => {
     const email = `login.${Date.now()}@example.com`;
-    await request(app.getHttpServer())
+    await req(app)
       .post('/auth/register')
       .send({ name: 'Login Test', email, password: 'senha12345' });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/login')
       .send({ email, password: 'senha12345' });
 
@@ -49,7 +49,7 @@ describe('Auth (e2e)', () => {
 
   // Cenário obrigatório 2: body inválido -> 400
   it('deve rejeitar registro com body inválido (400)', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/register')
       .send({ name: 'A', email: 'nao-e-email', password: '123' });
 
@@ -58,7 +58,7 @@ describe('Auth (e2e)', () => {
   });
 
   it('deve rejeitar tentativa de injetar role no registro (400)', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/register')
       .send({
         name: 'Hacker',
@@ -73,11 +73,11 @@ describe('Auth (e2e)', () => {
   // Cenário obrigatório 3: ausência/token inválido -> 401
   it('deve rejeitar login com senha incorreta (401)', async () => {
     const email = `wrongpass.${Date.now()}@example.com`;
-    await request(app.getHttpServer())
+    await req(app)
       .post('/auth/register')
       .send({ name: 'Wrong Pass', email, password: 'senhaCorreta123' });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/login')
       .send({ email, password: 'senhaErrada' });
 
@@ -85,13 +85,13 @@ describe('Auth (e2e)', () => {
   });
 
   it('deve rejeitar acesso a rota protegida sem token (401)', async () => {
-    const response = await request(app.getHttpServer()).get('/users/me');
+    const response = await req(app).get('/users/me');
 
     expect(response.status).toBe(401);
   });
 
   it('deve rejeitar acesso a rota protegida com token inválido (401)', async () => {
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .get('/users/me')
       .set('Authorization', 'Bearer token.invalido.aqui');
 
@@ -100,11 +100,11 @@ describe('Auth (e2e)', () => {
 
   it('deve rejeitar e-mail duplicado no registro (409)', async () => {
     const email = `duplicado.${Date.now()}@example.com`;
-    await request(app.getHttpServer())
+    await req(app)
       .post('/auth/register')
       .send({ name: 'Primeiro', email, password: 'senha12345' });
 
-    const response = await request(app.getHttpServer())
+    const response = await req(app)
       .post('/auth/register')
       .send({ name: 'Segundo', email, password: 'senha12345' });
 
