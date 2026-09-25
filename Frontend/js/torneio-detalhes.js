@@ -147,7 +147,7 @@ const TOURNAMENT_NEXT_STATUS = {
     return `
       <form id="register-team-form" class="cluster" style="margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--border);">
         <label for="team-select" class="sr-only">Selecionar equipe para inscrever</label>
-        <select id="team-select" style="flex: 1;">
+        <select id="team-select" style="flex: 1; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--sp-3) var(--sp-4); color: var(--text);">
           <option value="">Carregando seus times...</option>
         </select>
         <button type="submit" class="btn btn-primary btn-sm">Inscrever</button>
