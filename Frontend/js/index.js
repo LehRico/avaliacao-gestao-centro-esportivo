@@ -7,6 +7,35 @@
   await Promise.all([loadSports(), loadTournaments(), loadMatches()]);
 })();
 
+function sportImageSlug(name) {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function sportCard(sport) {
+  const imageSrc = `assets/sports/${sportImageSlug(sport.name)}.jpg`;
+  const initial = sport.name.trim().charAt(0).toUpperCase();
+
+  return `
+    <div class="sport-card">
+      <div class="sport-card-image">
+        <img
+          src="${imageSrc}"
+          alt="${sport.name}"
+          class="sport-card-image-photo"
+          onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'sport-card-image-fallback', textContent: '${initial}' }))"
+        />
+      </div>
+      <div class="sport-card-name">${sport.name}</div>
+    </div>
+  `;
+}
+
 async function loadSports() {
   const container = document.getElementById('sports-list');
   try {
@@ -17,9 +46,7 @@ async function loadSports() {
       return;
     }
 
-    container.innerHTML = sports
-      .map((s) => `<span class="sport-pill">${s.name}</span>`)
-      .join('');
+    container.innerHTML = sports.map(sportCard).join('');
   } catch (error) {
     container.innerHTML = errorState(error.message);
   }
