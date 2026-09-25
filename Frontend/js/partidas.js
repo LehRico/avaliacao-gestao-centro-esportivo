@@ -4,6 +4,12 @@
 
   renderShell('partidas', user);
 
+  const canCreateMatch = user.role === 'ORGANIZER' || user.role === 'ADMIN';
+  if (canCreateMatch) {
+    document.getElementById('page-actions').innerHTML =
+      '<a href="torneios.html" class="btn btn-primary">Nova partida</a>';
+  }
+
   let currentPage = 1;
   const statusFilter = document.getElementById('status-filter');
 
