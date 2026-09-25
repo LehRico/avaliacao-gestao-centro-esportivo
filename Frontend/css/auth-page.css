@@ -13,10 +13,10 @@
   content: '';
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(var(--border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border) 1px, transparent 1px);
-  background-size: 48px 48px;
-  opacity: 0.25;
+  background-image: url('../assets/court-pattern.svg');
+  background-repeat: repeat;
+  background-size: 720px 400px;
+  opacity: 0.35;
   pointer-events: none;
 }
 
@@ -29,6 +29,10 @@
   width: 100%;
   max-width: 380px;
   box-shadow: var(--shadow-md);
+}
+
+.auth-back {
+  margin-bottom: var(--sp-5);
 }
 
 .auth-brand {

@@ -1,8 +1,26 @@
 body {
+  position: relative;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-base);
   font-size: var(--fs-base);
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('../assets/court-pattern.svg');
+  background-repeat: repeat;
+  background-size: 720px 400px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
 }
 
 /* ============ Shell da aplicação (área logada) ============ */
@@ -40,11 +58,21 @@ body {
 }
 
 .sidebar-section-label {
+  display: block;
+  margin-top: var(--sp-3);
   padding: var(--sp-4) var(--sp-5) var(--sp-2);
+  border-top: var(--border-width) solid var(--border);
   font-size: var(--fs-xs);
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  opacity: 0.75;
+}
+
+.sidebar-section-label:first-child {
+  margin-top: 0;
+  border-top: none;
 }
 
 .sidebar-link {
