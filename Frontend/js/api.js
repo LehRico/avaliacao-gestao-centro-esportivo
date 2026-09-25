@@ -37,7 +37,7 @@ function extractMessage(body, status) {
 }
 
 async function request(method, path, { body, isFormData = false } = {}) {
-  const headers = {};
+  const headers = { 'X-API-KEY': CONFIG.API_KEY };
   const token = getToken();
 
   if (token) {
