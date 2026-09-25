@@ -47,6 +47,36 @@ function initials(name) {
   return (first + last).toUpperCase();
 }
 
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+const SEQUENTIAL_ALPHABETS = ['abcdefghijklmnopqrstuvwxyz', '0123456789'];
+
+function isEntirelySequential(password) {
+  const normalized = password.toLowerCase();
+  return SEQUENTIAL_ALPHABETS.some((alphabet) => {
+    const reversed = alphabet.split('').reverse().join('');
+    return alphabet.includes(normalized) || reversed.includes(normalized);
+  });
+}
+
+function getPasswordError(password) {
+  if (password.length < 8) {
+    return 'A senha deve ter no mínimo 8 caracteres.';
+  }
+  if (/ {2,}/.test(password)) {
+    return 'A senha não pode conter espaços em sequência.';
+  }
+  if (!/[a-zA-Z0-9]/.test(password)) {
+    return 'A senha não pode conter apenas caracteres especiais.';
+  }
+  if (isEntirelySequential(password)) {
+    return 'A senha não pode ser uma sequência óbvia (ex: "12345678", "abcdefgh").';
+  }
+  return null;
+}
+
 function setFieldError(fieldId, message) {
   const el = document.getElementById(`${fieldId}-error`);
   if (el) el.textContent = message || '';

@@ -36,7 +36,7 @@ async function register(name, email, password) {
 
 function logout() {
   clearSession();
-  window.location.href = 'login.html';
+  window.location.href = 'index.html';
 }
 
 /**

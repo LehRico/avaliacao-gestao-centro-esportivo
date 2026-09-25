@@ -21,8 +21,17 @@
       setFieldError('email', 'Informe seu e-mail.');
       return;
     }
+    if (!isValidEmail(email)) {
+      setFieldError('email', 'Informe um e-mail em um formato válido (ex: nome@dominio.com).');
+      return;
+    }
     if (!password) {
       setFieldError('password', 'Informe sua senha.');
+      return;
+    }
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      setFieldError('password', passwordError);
       return;
     }
 

@@ -26,9 +26,13 @@
     if (!email) {
       setFieldError('email', 'Informe seu e-mail.');
       hasError = true;
+    } else if (!isValidEmail(email)) {
+      setFieldError('email', 'Informe um e-mail em um formato válido (ex: nome@dominio.com).');
+      hasError = true;
     }
-    if (password.length < 8) {
-      setFieldError('password', 'A senha deve ter no mínimo 8 caracteres.');
+    const passwordError = getPasswordError(password);
+    if (passwordError) {
+      setFieldError('password', passwordError);
       hasError = true;
     }
     if (hasError) return;
