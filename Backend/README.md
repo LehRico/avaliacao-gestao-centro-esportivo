@@ -36,7 +36,7 @@ Projeto desenvolvido para a avaliação prática de Backend (documento `AV-11-CE
 | Validação | `class-validator` + `class-transformer` + `ValidationPipe` global |
 | Upload | `multer` (via `@nestjs/platform-express`) |
 | Integração externa | `@nestjs/axios` (`HttpService`) — BrasilAPI (feriados) e Open-Meteo (clima) |
-| Segurança | Helmet, Compression, bcrypt |
+| Segurança | Helmet, Compression, bcrypt, `X-API-KEY` global |
 | Testes | Jest + Supertest (testes e2e) |
 
 ## Arquitetura
@@ -170,6 +170,7 @@ O script é idempotente (pode rodar quantas vezes quiser sem duplicar dados) e i
 | `DATABASE_URL` | **Sim** | Connection string do PostgreSQL (`postgresql://usuario:senha@host:porta/banco?schema=public`) |
 | `JWT_SECRET` | **Sim** | Segredo de assinatura do JWT — mínimo 32 caracteres |
 | `JWT_EXPIRES_IN` | Não (default `1d`) | Tempo de expiração do token |
+| `API_KEY` | **Sim** | Chave exigida no header `X-API-KEY` em **todas** as rotas da API, inclusive as públicas — mínimo 16 caracteres |
 | `UPLOAD_MAX_FILE_SIZE_MB` | Não (default `5`) | Tamanho máximo do upload de regulamento, em MB |
 | `UPLOAD_DEST` | Não (default `./uploads`) | Diretório base de uploads |
 | `EXTERNAL_API_TIMEOUT_MS` | Não (default `5000`) | Timeout das chamadas HTTP externas |
@@ -177,9 +178,20 @@ O script é idempotente (pode rodar quantas vezes quiser sem duplicar dados) e i
 | `WEATHER_API_URL` | Não (default Open-Meteo) | URL base da API de clima |
 | `WEATHER_LATITUDE` / `WEATHER_LONGITUDE` | Não (default São Paulo) | Coordenadas usadas na consulta de clima |
 
-A validação dessas variáveis acontece na inicialização via schema Joi ([`src/config/env.validation.ts`](src/config/env.validation.ts)) — a aplicação recusa subir se `DATABASE_URL` ou `JWT_SECRET` estiverem ausentes/inválidos, com mensagem de erro clara.
+A validação dessas variáveis acontece na inicialização via schema Joi ([`src/config/env.validation.ts`](src/config/env.validation.ts)) — a aplicação recusa subir se `DATABASE_URL`, `JWT_SECRET` ou `API_KEY` estiverem ausentes/inválidos, com mensagem de erro clara.
 
 Nunca commite o arquivo `.env` real — ele está no `.gitignore`. Apenas `.env.example` é versionado.
+
+## Chave de API (`X-API-KEY`)
+
+Toda requisição à API — **sem exceção, inclusive rotas públicas como `POST /auth/login` e `POST /auth/register`** — deve incluir o header `X-API-KEY` com o valor configurado em `API_KEY`. A validação acontece em um Guard global ([`ApiKeyGuard`](src/common/guards/api-key.guard.ts), registrado via `APP_GUARD`), que roda antes de qualquer outro Guard (incluindo `JwtAuthGuard`). Ausência ou valor incorreto resulta em `401 Unauthorized` com a mensagem `"Chave de API ausente ou inválida."`.
+
+Essa camada é independente da autenticação JWT: a `X-API-KEY` identifica o cliente autorizado a falar com a API (o Frontend oficial); o JWT identifica o usuário autenticado e seu papel. As duas são exigidas em conjunto nas rotas privadas.
+
+```bash
+curl http://localhost:3000/sports \
+  -H "X-API-KEY: <valor-de-API_KEY>"
+```
 
 ## Banco de dados e migrations
 
@@ -227,6 +239,7 @@ PORT=3001
 DATABASE_URL="postgresql://usuario:senha@localhost:5432/centro_esportivo_test?schema=public"
 JWT_SECRET=um-segredo-de-pelo-menos-32-caracteres-para-teste
 JWT_EXPIRES_IN=1d
+API_KEY=uma-chave-de-teste-com-pelo-menos-16-caracteres
 UPLOAD_MAX_FILE_SIZE_MB=5
 UPLOAD_DEST=./uploads
 EXTERNAL_API_TIMEOUT_MS=5000
@@ -291,7 +304,7 @@ Nenhuma resposta de erro inclui dados sensíveis (senha, hash, stack trace) — 
 
 ## Endpoints
 
-Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuário autenticado) · **ADMIN**/**ORGANIZER** (papel específico) · "e apenas o dono/organizador" indica checagem adicional de propriedade feita no Service.
+Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuário autenticado) · **ADMIN**/**ORGANIZER** (papel específico) · "e apenas o dono/organizador" indica checagem adicional de propriedade feita no Service. A coluna **Auth** descreve apenas a exigência de JWT/papel — o header `X-API-KEY` (ver [Chave de API](#chave-de-api-x-api-key)) é exigido em **todas** as linhas abaixo, inclusive as marcadas como Público.
 
 > **Documentação interativa**: com a aplicação rodando, acesse `http://localhost:3000/api` (Swagger UI) para ver e testar todos os endpoints diretamente pelo navegador, incluindo upload de arquivo e autenticação via botão "Authorize".
 
@@ -310,6 +323,7 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 |---|---|---|---|---|
 | GET | `/users/me` | Auth | — | 200, 401 |
 | GET | `/users` | ADMIN | — | 200, 401, 403 |
+| PATCH | `/users/:id/role` | ADMIN, e não sobre si mesmo nem sobre outro ADMIN | `{ role }` (USER/ORGANIZER/ADMIN) | 200, 400, 401, 403 (próprio papel ou outro admin), 404, 409 (já possui esse papel) |
 
 ### Sports
 
@@ -325,11 +339,13 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 
 | Método | URL | Auth | Body | Respostas |
 |---|---|---|---|---|
-| POST | `/courts` | ADMIN | `{ name, location? }` | 201, 400, 401, 403 |
+| POST | `/courts` | ADMIN | `{ name, location? }` | 201, 400, 401, 403, 409 (nome duplicado) |
 | GET | `/courts` | Público | — | 200 |
 | GET | `/courts/:id` | Público | — | 200, 404 |
-| PATCH | `/courts/:id` | ADMIN | `{ name?, location? }` | 200, 400, 401, 403, 404 |
-| DELETE | `/courts/:id` | ADMIN | — | 200, 401, 403, 404, 409 (partidas vinculadas) |
+| PATCH | `/courts/:id` | ADMIN | `{ name?, location? }` | 200, 400, 401, 403, 404, 409 (nome duplicado) |
+| DELETE | `/courts/:id` | ADMIN | — | 200, 401, 403, 404, 409 (há partida SCHEDULED/IN_PROGRESS vinculada) |
+
+Excluir uma quadra que só possui partidas `FINISHED`/`CANCELED` vinculadas é permitido: o nome da quadra é preservado em `Match.courtName` (snapshot) e `Match.courtId` passa a `null`. O histórico da partida continua mostrando o nome do local (campo `court.name` na resposta da API), mesmo sem a quadra existir mais no cadastro.
 
 ### Teams
 
@@ -339,7 +355,7 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 | GET | `/teams` | Público | — | 200 |
 | GET | `/teams/:id` | Público | — | 200, 404 |
 | PATCH | `/teams/:id` | Auth, e apenas o dono ou ADMIN | `{ name? }` | 200, 400, 401, 403, 404 |
-| DELETE | `/teams/:id` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (vínculos) |
+| DELETE | `/teams/:id` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (há membros além do dono, ou vínculos em torneios/partidas) |
 | POST | `/teams/:id/members` | Auth, e apenas o dono ou ADMIN | `{ email }` | 201, 400, 401, 403, 404 (time ou usuário), 409 (já é membro) |
 | DELETE | `/teams/:id/members/:userId` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (remover o dono) |
 
@@ -374,15 +390,19 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 
 ## Exemplos de requisição
 
+> Todos os exemplos abaixo omitem `-H "X-API-KEY: <valor-de-API_KEY>"` por brevidade, mas esse header é **obrigatório em toda requisição**, inclusive nas rotas públicas — veja [Chave de API](#chave-de-api-x-api-key).
+
 ### Registro e login
 
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
+  -H "X-API-KEY: <valor-de-API_KEY>" \
   -d '{"name":"Maria Silva","email":"maria@example.com","password":"senhaSegura123"}'
 
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
+  -H "X-API-KEY: <valor-de-API_KEY>" \
   -d '{"email":"maria@example.com","password":"senhaSegura123"}'
 ```
 
