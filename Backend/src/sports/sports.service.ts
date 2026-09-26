@@ -13,10 +13,10 @@ export class SportsService {
     constructor(private readonly prisma: PrismaService)  {}
 
     async create (dto: CreateSportDto) {
-        const existing = await this.prisma.sport.findUnique({
-            where: { name: dto.name },
+        const existing = await this.prisma.sport.findFirst({
+            where: { name: { equals: dto.name, mode: 'insensitive' } },
         });
-        
+
         if (existing) {
             throw new ConflictException('Já existe um esporte com esse nome.');
         }
@@ -42,8 +42,8 @@ export class SportsService {
         await this.findOne(id);
 
         if (dto.name) {
-            const existing = await this.prisma.sport.findUnique({
-                where: {name: dto.name},
+            const existing = await this.prisma.sport.findFirst({
+                where: { name: { equals: dto.name, mode: 'insensitive' } },
             });
 
             if (existing && existing.id !== id) {
