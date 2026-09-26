@@ -310,6 +310,8 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 
 > **Paginação e filtros**: `GET /teams`, `GET /tournaments` e `GET /matches` (e sua variante aninhada `GET /tournaments/:id/matches`) aceitam `?page=&limit=` (limit máximo 100, padrão 20) e retornam `{ data: [...], meta: { page, limit, total, totalPages } }` em vez de um array puro. Filtros adicionais: `teams?sportId=`, `tournaments?sportId=&status=`, `matches?tournamentId=&status=`.
 
+> **Campos de data** (`startDate`, `endDate`, `scheduledAt`): aceitam ISO 8601 (`2027-12-01T10:00:00.000Z`) ou formato brasileiro `DD-MM-YYYY`/`DD/MM/YYYY` (`01-12-2027`), convertido automaticamente. Quando enviado sem horário, assume o horário atual do momento da requisição. `startDate` (torneio) e `scheduledAt` (partida) não podem ser uma data no passado.
+
 ### Auth
 
 | Método | URL | Auth | Body | Respostas |
@@ -342,10 +344,12 @@ Legenda de autenticação: **Público** (sem token) · **Auth** (qualquer usuár
 | POST | `/courts` | ADMIN | `{ name, location? }` | 201, 400, 401, 403, 409 (nome duplicado) |
 | GET | `/courts` | Público | — | 200 |
 | GET | `/courts/:id` | Público | — | 200, 404 |
-| PATCH | `/courts/:id` | ADMIN | `{ name?, location? }` | 200, 400, 401, 403, 404, 409 (nome duplicado) |
+| PATCH | `/courts/:id` | ADMIN | `{ name?, location?, status? }` | 200, 400, 401, 403, 404, 409 (nome duplicado) |
 | DELETE | `/courts/:id` | ADMIN | — | 200, 401, 403, 404, 409 (há partida SCHEDULED/IN_PROGRESS vinculada) |
 
 Excluir uma quadra que só possui partidas `FINISHED`/`CANCELED` vinculadas é permitido: o nome da quadra é preservado em `Match.courtName` (snapshot) e `Match.courtId` passa a `null`. O histórico da partida continua mostrando o nome do local (campo `court.name` na resposta da API), mesmo sem a quadra existir mais no cadastro.
+
+Toda quadra tem um `status`: `ATIVA` (padrão), `EM_MANUTENCAO` ou `INATIVA`. Apenas ADMIN altera o status (via `PATCH /courts/:id`). Criar (`POST /matches`, `POST /tournaments/:id/matches`) ou reagendar (`PATCH /matches/:id`, ao trocar de quadra) uma partida exige que a quadra esteja `ATIVA` — caso contrário, `409 Conflict`.
 
 ### Teams
 
@@ -355,9 +359,11 @@ Excluir uma quadra que só possui partidas `FINISHED`/`CANCELED` vinculadas é p
 | GET | `/teams` | Público | — | 200 |
 | GET | `/teams/:id` | Público | — | 200, 404 |
 | PATCH | `/teams/:id` | Auth, e apenas o dono ou ADMIN | `{ name? }` | 200, 400, 401, 403, 404 |
-| DELETE | `/teams/:id` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (há membros além do dono, ou vínculos em torneios/partidas) |
+| DELETE | `/teams/:id` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (há membros além do capitão, ou vínculos em torneios/partidas) |
 | POST | `/teams/:id/members` | Auth, e apenas o dono ou ADMIN | `{ email }` | 201, 400, 401, 403, 404 (time ou usuário), 409 (já é membro) |
-| DELETE | `/teams/:id/members/:userId` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (remover o dono) |
+| DELETE | `/teams/:id/members/:userId` | Auth, e apenas o dono ou ADMIN | — | 200, 401, 403, 404, 409 (remover o capitão) |
+
+Times criados por USER têm o próprio dono como `CAPTAIN` automaticamente. Times criados por ORGANIZER/ADMIN nascem sem membros (o dono é só o gestor administrativo, não joga) — nesse caso, o primeiro membro adicionado via `POST /teams/:id/members` vira `CAPTAIN` automaticamente; os seguintes entram como `MEMBER`. As proteções de "não remover" e "não excluir com outros membros" seguem o `CAPTAIN` da equipe, não o `ownerId` — para times de USER isso coincide (dono = capitão); para times de gestor, protege o jogador promovido a capitão.
 
 ### Tournaments
 
@@ -379,6 +385,7 @@ Excluir uma quadra que só possui partidas `FINISHED`/`CANCELED` vinculadas é p
 | Método | URL | Auth | Body | Respostas |
 |---|---|---|---|---|
 | POST | `/tournaments/:tournamentId/matches` | ORGANIZER/ADMIN, e apenas o organizador ou ADMIN | `{ courtId, teamAId, teamBId, scheduledAt, durationMin? }` | 201, 400, 401, 403, 404, 409 (status/times iguais/não inscrito/overlap) |
+| POST | `/matches` | ORGANIZER, ADMIN | `{ tournamentId?, courtId, teamAId, teamBId, scheduledAt, durationMin? }` | 201, 400, 401, 403, 404, 409 (times iguais/esportes diferentes/overlap) |
 | GET | `/tournaments/:tournamentId/matches` | Público | — | 200 |
 | GET | `/matches?tournamentId=` | Público | — | 200 |
 | GET | `/matches/:id` | Público | — | 200, 404 |
@@ -387,6 +394,8 @@ Excluir uma quadra que só possui partidas `FINISHED`/`CANCELED` vinculadas é p
 | PATCH | `/matches/:id/result` | ORGANIZER/ADMIN, e apenas o organizador ou ADMIN | `{ scoreA, scoreB }` | 200, 400, 401, 403, 404, 409 (não está IN_PROGRESS) |
 | DELETE | `/matches/:id` | ORGANIZER/ADMIN, e apenas o organizador ou ADMIN | — | 200, 401, 403, 404, 409 (não está SCHEDULED) |
 | GET | `/matches/:id/weather` | Público | — | 200, 404 |
+
+`tournamentId` é opcional na criação de partidas. Com torneio informado, valem as regras de sempre (status OPEN/IN_PROGRESS, times inscritos naquele torneio, apenas o organizador daquele torneio ou ADMIN). Sem torneio, a partida é independente: qualquer ORGANIZER ou ADMIN pode criá-la, sem checagem de status, mas os dois times ainda precisam existir, disputar o mesmo esporte e não podem ser o mesmo time. A checagem de sobreposição de horário na quadra é sempre aplicada, com ou sem torneio.
 
 ## Exemplos de requisição
 
