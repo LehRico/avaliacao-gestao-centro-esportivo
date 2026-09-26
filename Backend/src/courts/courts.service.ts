@@ -12,8 +12,8 @@ export class CourtsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateCourtDto) {
-    const existing = await this.prisma.court.findUnique({
-      where: { name: dto.name },
+    const existing = await this.prisma.court.findFirst({
+      where: { name: { equals: dto.name, mode: 'insensitive' } },
     });
 
     if (existing) {
@@ -41,8 +41,8 @@ export class CourtsService {
     await this.findOne(id);
 
     if (dto.name) {
-      const existing = await this.prisma.court.findUnique({
-        where: { name: dto.name },
+      const existing = await this.prisma.court.findFirst({
+        where: { name: { equals: dto.name, mode: 'insensitive' } },
       });
 
       if (existing && existing.id !== id) {

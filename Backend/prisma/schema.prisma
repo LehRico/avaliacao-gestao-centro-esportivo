@@ -40,6 +40,12 @@ enum MatchStatus {
   CANCELED
 }
 
+enum CourtStatus {
+  ATIVA
+  EM_MANUTENCAO
+  INATIVA
+}
+
 // ------------------------------------------------------------------
 // User
 // ------------------------------------------------------------------
@@ -81,12 +87,13 @@ model Sport {
 // ------------------------------------------------------------------
 
 model Court {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id        String      @id @default(uuid())
+  name      String      @unique
   location  String?
   imagePath String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    CourtStatus @default(ATIVA)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   matches Match[]
 
@@ -188,7 +195,7 @@ model TournamentTeam {
 
 model Match {
   id           String      @id @default(uuid())
-  tournamentId String
+  tournamentId String?
   courtId      String?
   courtName    String?
   teamAId      String
@@ -201,10 +208,10 @@ model Match {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id])
-  court      Court?     @relation(fields: [courtId], references: [id], onDelete: SetNull)
-  teamA      Team       @relation("MatchTeamA", fields: [teamAId], references: [id])
-  teamB      Team       @relation("MatchTeamB", fields: [teamBId], references: [id])
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Restrict)
+  court      Court?      @relation(fields: [courtId], references: [id], onDelete: SetNull)
+  teamA      Team        @relation("MatchTeamA", fields: [teamAId], references: [id])
+  teamB      Team        @relation("MatchTeamB", fields: [teamBId], references: [id])
 
   @@index([courtId, scheduledAt])
   @@index([tournamentId])
