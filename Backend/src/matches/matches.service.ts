@@ -47,26 +47,10 @@ export class MatchesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(
-    tournamentId: string,
+    tournamentId: string | undefined,
     dto: CreateMatchDto,
     currentUser: { userId: string; role: string },
   ) {
-    const tournament = await this.prisma.tournament.findUnique({
-      where: { id: tournamentId },
-    });
-
-    if (!tournament) {
-      throw new NotFoundException('Torneio não encontrado.');
-    }
-
-    this.assertOrganizerOrAdmin(tournament.organizerId, currentUser);
-
-    if (!CREATION_ALLOWED_TOURNAMENT_STATUSES.includes(tournament.status)) {
-      throw new ConflictException(
-        `Não é possível criar partidas quando o torneio está com status ${tournament.status}.`,
-      );
-    }
-
     if (dto.teamAId === dto.teamBId) {
       throw new ConflictException(
         'Uma equipe não pode enfrentar ela mesma.',
@@ -81,7 +65,39 @@ export class MatchesService {
       throw new NotFoundException('Quadra não encontrada.');
     }
 
-    await this.assertTeamsRegistered(tournamentId, [dto.teamAId, dto.teamBId]);
+    if (court.status !== 'ATIVA') {
+      throw new ConflictException(
+        `Não é possível agendar partidas nesta quadra: status atual é ${court.status}.`,
+      );
+    }
+
+    if (tournamentId) {
+      const tournament = await this.prisma.tournament.findUnique({
+        where: { id: tournamentId },
+      });
+
+      if (!tournament) {
+        throw new NotFoundException('Torneio não encontrado.');
+      }
+
+      this.assertOrganizerOrAdmin(tournament.organizerId, currentUser);
+
+      if (!CREATION_ALLOWED_TOURNAMENT_STATUSES.includes(tournament.status)) {
+        throw new ConflictException(
+          `Não é possível criar partidas quando o torneio está com status ${tournament.status}.`,
+        );
+      }
+
+      await this.assertTeamsRegistered(tournamentId, [dto.teamAId, dto.teamBId]);
+    } else {
+      if (currentUser.role !== 'ADMIN' && currentUser.role !== 'ORGANIZER') {
+        throw new ForbiddenException(
+          'Apenas ORGANIZER ou ADMIN podem criar partidas.',
+        );
+      }
+
+      await this.assertSameSport([dto.teamAId, dto.teamBId]);
+    }
 
     const scheduledAt = new Date(dto.scheduledAt);
     const durationMin = dto.durationMin ?? 60;
@@ -90,7 +106,7 @@ export class MatchesService {
 
     const created = await this.prisma.match.create({
       data: {
-        tournamentId,
+        tournamentId: tournamentId ?? null,
         courtId: dto.courtId,
         teamAId: dto.teamAId,
         teamBId: dto.teamBId,
@@ -147,7 +163,7 @@ export class MatchesService {
     currentUser: { userId: string; role: string },
   ) {
     const match = await this.getMatchWithTournament(id);
-    this.assertOrganizerOrAdmin(match.tournament.organizerId, currentUser);
+    this.assertCanManageMatch(match.tournament, currentUser);
 
     if (match.status !== 'SCHEDULED') {
       throw new ConflictException(
@@ -173,6 +189,12 @@ export class MatchesService {
 
       if (!court) {
         throw new NotFoundException('Quadra não encontrada.');
+      }
+
+      if (court.status !== 'ATIVA') {
+        throw new ConflictException(
+          `Não é possível agendar partidas nesta quadra: status atual é ${court.status}.`,
+        );
       }
     }
 
@@ -200,7 +222,7 @@ export class MatchesService {
     currentUser: { userId: string; role: string },
   ) {
     const match = await this.getMatchWithTournament(id);
-    this.assertOrganizerOrAdmin(match.tournament.organizerId, currentUser);
+    this.assertCanManageMatch(match.tournament, currentUser);
 
     const allowedNext = RESULT_ALLOWED_TRANSITIONS[match.status] ?? [];
 
@@ -225,7 +247,7 @@ export class MatchesService {
     currentUser: { userId: string; role: string },
   ) {
     const match = await this.getMatchWithTournament(id);
-    this.assertOrganizerOrAdmin(match.tournament.organizerId, currentUser);
+    this.assertCanManageMatch(match.tournament, currentUser);
 
     if (match.status !== 'IN_PROGRESS') {
       throw new ConflictException(
@@ -248,7 +270,7 @@ export class MatchesService {
 
   async remove(id: string, currentUser: { userId: string; role: string }) {
     const match = await this.getMatchWithTournament(id);
-    this.assertOrganizerOrAdmin(match.tournament.organizerId, currentUser);
+    this.assertCanManageMatch(match.tournament, currentUser);
 
     if (match.status !== 'SCHEDULED') {
       throw new ConflictException(
@@ -289,6 +311,33 @@ export class MatchesService {
           `O time "${team.name}" não está inscrito neste torneio.`,
         );
       }
+    }
+  }
+
+  /**
+   * Usado apenas para partidas sem torneio: garante que os dois times
+   * existem e disputam o mesmo esporte, já que não há torneio para
+   * amarrar essa validação.
+   */
+  private async assertSameSport(teamIds: string[]) {
+    const teams = await this.prisma.team.findMany({
+      where: { id: { in: teamIds } },
+    });
+
+    for (const teamId of teamIds) {
+      if (!teams.some((team) => team.id === teamId)) {
+        throw new NotFoundException(`Time ${teamId} não encontrado.`);
+      }
+    }
+
+    const [teamA, teamB] = teamIds.map(
+      (id) => teams.find((team) => team.id === id)!,
+    );
+
+    if (teamA.sportId !== teamB.sportId) {
+      throw new ConflictException(
+        'As equipes precisam disputar o mesmo esporte.',
+      );
     }
   }
 
@@ -334,6 +383,31 @@ export class MatchesService {
     if (currentUser.userId !== organizerId) {
       throw new ForbiddenException(
         'Apenas o organizador deste torneio pode realizar esta operação.',
+      );
+    }
+  }
+
+  /**
+   * Para partidas vinculadas a um torneio, apenas o organizador daquele
+   * torneio (ou ADMIN) pode gerenciá-la. Para partidas independentes
+   * (sem torneio), qualquer ORGANIZER ou ADMIN pode gerenciá-la.
+   */
+  private assertCanManageMatch(
+    tournament: { organizerId: string } | null,
+    currentUser: { userId: string; role: string },
+  ) {
+    if (currentUser.role === 'ADMIN') {
+      return;
+    }
+
+    if (tournament) {
+      this.assertOrganizerOrAdmin(tournament.organizerId, currentUser);
+      return;
+    }
+
+    if (currentUser.role !== 'ORGANIZER') {
+      throw new ForbiddenException(
+        'Apenas ORGANIZER ou ADMIN podem gerenciar partidas.',
       );
     }
   }

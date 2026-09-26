@@ -40,6 +40,16 @@ export class MatchesController {
     return this.matchesService.create(tournamentId, dto, user);
   }
 
+  @Post('matches')
+  @Auth('ORGANIZER', 'ADMIN')
+  @ApiBearerAuth('access-token')
+  createIndependent(
+    @Body() dto: CreateMatchDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.matchesService.create(dto.tournamentId, dto, user);
+  }
+
   @Get('tournaments/:tournamentId/matches')
   findAllByTournament(
     @Param('tournamentId') tournamentId: string,
