@@ -36,12 +36,16 @@
 
   function renderPage(team, user) {
     const manage = canManage(team, user);
+    const ownerIsCaptain = team.members.some(
+      (m) => m.user.id === team.owner.id && m.role === 'CAPTAIN',
+    );
+    const ownerLabel = ownerIsCaptain ? 'Capitão' : 'Gestor';
 
     return `
       <div class="page-header">
         <div class="page-header-text">
           <h1>${team.name}</h1>
-          <p>${team.sport.name} · Capitão: ${team.owner.name}</p>
+          <p>${team.sport.name} · ${ownerLabel}: ${team.owner.name}</p>
         </div>
         ${
           manage

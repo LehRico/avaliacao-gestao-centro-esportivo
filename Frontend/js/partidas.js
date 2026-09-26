@@ -7,7 +7,7 @@
   const canCreateMatch = user.role === 'ORGANIZER' || user.role === 'ADMIN';
   if (canCreateMatch) {
     document.getElementById('page-actions').innerHTML =
-      '<a href="torneios.html" class="btn btn-primary">Nova partida</a>';
+      '<a href="partida-nova.html" class="btn btn-primary">Nova partida</a>';
   }
 
   let currentPage = 1;
@@ -82,7 +82,7 @@ function scorecard(match) {
   return `
     <a href="partida-detalhes.html?id=${match.id}" class="scorecard" data-status="${match.status}">
       <div class="scorecard-header">
-        <span class="scorecard-tournament">${match.tournament.name}</span>
+        <span class="scorecard-tournament">${match.tournament ? match.tournament.name : 'Partida independente'}</span>
         ${matchStatusBadge(match.status)}
       </div>
 

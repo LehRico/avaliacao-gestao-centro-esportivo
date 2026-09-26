@@ -100,7 +100,7 @@ function publicMatchCard(match) {
   return `
     <div class="scorecard" data-status="${match.status}">
       <div class="scorecard-header">
-        <span class="scorecard-tournament">${match.tournament.name}</span>
+        <span class="scorecard-tournament">${match.tournament ? match.tournament.name : 'Partida independente'}</span>
         ${matchStatusBadge(match.status)}
       </div>
       <div class="scorecard-teams">

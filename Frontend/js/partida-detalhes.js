@@ -38,7 +38,7 @@
     return `
       <div class="page-header">
         <div class="page-header-text">
-          <h1>${match.tournament.name}</h1>
+          <h1>${match.tournament ? match.tournament.name : 'Partida independente'}</h1>
           <p>${match.court.name} · ${formatDateTime(match.scheduledAt)}</p>
         </div>
         ${matchStatusBadge(match.status)}

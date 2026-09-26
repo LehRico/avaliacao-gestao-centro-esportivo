@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nova partida — MATCHPOINT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+  rel="stylesheet"
+/>
+<link rel="stylesheet" href="../css/reset.css" />
+<link rel="stylesheet" href="../css/tokens.css" />
+<link rel="stylesheet" href="../css/layout.css" />
+<link rel="stylesheet" href="../css/components.css" />
+<link rel="stylesheet" href="../css/responsive.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <div>
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="btn btn-ghost menu-toggle" id="menu-toggle" aria-label="Abrir menu">☰</button>
+          <a href="partidas.html" class="btn btn-ghost btn-sm">← Partidas</a>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="logout-btn">Sair</button>
+      </header>
+
+      <main class="content" style="max-width: 560px;">
+        <div class="page-header">
+          <div class="page-header-text">
+            <h1>Nova partida</h1>
+            <p>Vincule a um torneio ou crie uma partida independente.</p>
+          </div>
+        </div>
+
+        <form id="match-form" class="card stack">
+          <div class="field">
+            <label for="tournament">Torneio</label>
+            <select id="tournament">
+              <option value="">Nenhum — partida independente</option>
+            </select>
+            <span class="field-hint">Opcional. Sem torneio, as equipes só precisam disputar o mesmo esporte.</span>
+          </div>
+
+          <div class="field">
+            <label for="sport">Esporte</label>
+            <select id="sport" required></select>
+          </div>
+
+          <div class="cluster">
+            <div class="field" style="flex: 1;">
+              <label for="team-a">Equipe A</label>
+              <select id="team-a" required>
+                <option value="">Selecione o esporte primeiro</option>
+              </select>
+            </div>
+            <div class="field" style="flex: 1;">
+              <label for="team-b">Equipe B</label>
+              <select id="team-b" required>
+                <option value="">Selecione o esporte primeiro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="court">Quadra</label>
+            <select id="court" required></select>
+          </div>
+
+          <div class="field">
+            <label for="scheduled-at">Data e horário</label>
+            <input type="datetime-local" id="scheduled-at" required />
+          </div>
+
+          <div class="alert alert-danger" id="form-error" role="alert" hidden></div>
+
+          <button type="submit" class="btn btn-primary" id="submit-btn">
+            Agendar partida
+          </button>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/partida-nova.js"></script>
+</body>
+</html>
