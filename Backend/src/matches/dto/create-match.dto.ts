@@ -6,8 +6,14 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import { ParseFlexibleDate } from '../../common/validators/parse-flexible-date.transform';
+import { IsNotPastDate } from '../../common/validators/is-not-past-date.validator';
 
 export class CreateMatchDto {
+  @IsOptional()
+  @IsUUID()
+  tournamentId?: string;
+
   @IsUUID()
   courtId: string;
 
@@ -17,7 +23,9 @@ export class CreateMatchDto {
   @IsUUID()
   teamBId: string;
 
+  @ParseFlexibleDate()
   @IsDateString()
+  @IsNotPastDate()
   scheduledAt: string;
 
   @IsOptional()
