@@ -117,13 +117,20 @@ export class TeamsService {
     const team = await this.findOne(id);
     this.assertOwnerOrAdmin(team.ownerId, currentUser);
 
+    const captain = await this.prisma.teamMember.findFirst({
+      where: { teamId: id, role: 'CAPTAIN' },
+    });
+
     const otherMember = await this.prisma.teamMember.findFirst({
-      where: { teamId: id, userId: { not: team.ownerId } },
+      where: {
+        teamId: id,
+        userId: captain ? { not: captain.userId } : undefined,
+      },
     });
 
     if (otherMember) {
       throw new ConflictException(
-        'Não é possível excluir este time pois há membros além do dono. Remova os membros antes de excluir.',
+        'Não é possível excluir este time pois há membros além do capitão. Remova os membros antes de excluir.',
       );
     }
 
@@ -171,8 +178,16 @@ export class TeamsService {
 
     await this.assertNotInAnotherTeamOfSport(user.id, team.sportId);
 
+    const existingCaptain = await this.prisma.teamMember.findFirst({
+      where: { teamId, role: 'CAPTAIN' },
+    });
+
     await this.prisma.teamMember.create({
-      data: { teamId, userId: user.id, role: 'MEMBER' },
+      data: {
+        teamId,
+        userId: user.id,
+        role: existingCaptain ? 'MEMBER' : 'CAPTAIN',
+      },
     });
 
     return this.findOne(teamId);
@@ -186,18 +201,18 @@ export class TeamsService {
     const team = await this.findOne(teamId);
     this.assertOwnerOrAdmin(team.ownerId, currentUser);
 
-    if (memberUserId === team.ownerId) {
-      throw new ConflictException(
-        'O dono do time não pode ser removido. Exclua o time caso deseje encerrá-lo.',
-      );
-    }
-
     const member = await this.prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId: memberUserId } },
     });
 
     if (!member) {
       throw new NotFoundException('Membro não encontrado neste time.');
+    }
+
+    if (member.role === 'CAPTAIN') {
+      throw new ConflictException(
+        'O capitão do time não pode ser removido. Exclua o time caso deseje encerrá-lo.',
+      );
     }
 
     await this.prisma.teamMember.delete({
