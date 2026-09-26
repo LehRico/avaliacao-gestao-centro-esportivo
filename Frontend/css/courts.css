@@ -13,6 +13,9 @@
 }
 
 .court-card-name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: var(--fs-lg);
   font-weight: 700;
 }

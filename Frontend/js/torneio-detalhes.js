@@ -369,7 +369,14 @@ const TOURNAMENT_NEXT_STATUS = {
   async function loadCourtsForMatch(select) {
     try {
       const courts = await api.get('/courts');
-      select.innerHTML = courts
+      const active = courts.filter((c) => c.status === 'ATIVA');
+
+      if (active.length === 0) {
+        select.innerHTML = '<option value="">Nenhuma quadra ativa disponível</option>';
+        return;
+      }
+
+      select.innerHTML = active
         .map((c) => `<option value="${c.id}">${c.name}</option>`)
         .join('');
     } catch {

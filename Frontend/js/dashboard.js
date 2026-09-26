@@ -99,6 +99,15 @@ async function loadCourtsStatus() {
 
     list.innerHTML = courts
       .map((court) => {
+        if (court.status !== 'ATIVA') {
+          return `
+            <div class="cluster" style="justify-content: space-between; padding: var(--sp-3) 0; border-bottom: 1px solid var(--border);">
+              <span style="font-weight: 600; font-size: var(--fs-sm);">${court.name}</span>
+              ${courtStatusBadge(court.status)}
+            </div>
+          `;
+        }
+
         const occupied = occupiedCourtIds.has(court.id);
         return `
           <div class="cluster" style="justify-content: space-between; padding: var(--sp-3) 0; border-bottom: 1px solid var(--border);">

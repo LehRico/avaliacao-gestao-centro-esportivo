@@ -34,6 +34,18 @@ const ROLE_BADGE = {
   ADMIN: 'badge-warning',
 };
 
+const COURT_STATUS_LABEL = {
+  ATIVA: 'Ativa',
+  EM_MANUTENCAO: 'Em manutenção',
+  INATIVA: 'Inativa',
+};
+
+const COURT_STATUS_BADGE = {
+  ATIVA: 'badge-success',
+  EM_MANUTENCAO: 'badge-warning',
+  INATIVA: 'badge-danger',
+};
+
 function roleBadge(role) {
   const cls = ROLE_BADGE[role] ?? 'badge-neutral';
   return `<span class="badge ${cls}">${role}</span>`;
@@ -51,6 +63,10 @@ function matchStatusBadge(status) {
 
 function tournamentStatusBadge(status) {
   return statusBadge(status, TOURNAMENT_STATUS_LABEL, TOURNAMENT_STATUS_BADGE);
+}
+
+function courtStatusBadge(status) {
+  return statusBadge(status, COURT_STATUS_LABEL, COURT_STATUS_BADGE);
 }
 
 function emptyState(title, description) {

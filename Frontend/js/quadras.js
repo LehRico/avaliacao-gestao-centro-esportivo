@@ -116,6 +116,21 @@
             <label for="court-location">Localização (opcional)</label>
             <input type="text" id="court-location" value="${court?.location ?? ''}" />
           </div>
+          ${
+            isEdit
+              ? `
+            <div class="field">
+              <label for="court-status">Status</label>
+              <select id="court-status">
+                <option value="ATIVA" ${court.status === 'ATIVA' ? 'selected' : ''}>Ativa</option>
+                <option value="EM_MANUTENCAO" ${court.status === 'EM_MANUTENCAO' ? 'selected' : ''}>Em manutenção</option>
+                <option value="INATIVA" ${court.status === 'INATIVA' ? 'selected' : ''}>Inativa</option>
+              </select>
+              <span class="field-hint">Quadras fora de "Ativa" não podem receber novas partidas.</span>
+            </div>
+          `
+              : ''
+          }
           <div class="alert alert-danger" id="court-form-error" role="alert" hidden></div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" data-close>Cancelar</button>
@@ -141,6 +156,10 @@
       const name = overlay.querySelector('#court-name').value.trim();
       const location = overlay.querySelector('#court-location').value.trim();
       const payload = { name, location: location || undefined };
+
+      if (isEdit) {
+        payload.status = overlay.querySelector('#court-status').value;
+      }
 
       try {
         if (isEdit) {
@@ -182,7 +201,10 @@ function courtCard(court, isAdmin) {
     <div class="court-card">
       <div class="court-card-header">
         <div>
-          <div class="court-card-name">${court.name}</div>
+          <div class="court-card-name">
+            ${court.name}
+            ${courtStatusBadge(court.status)}
+          </div>
           ${court.location ? `<div class="court-card-location">${court.location}</div>` : ''}
         </div>
         <div class="court-card-actions">
